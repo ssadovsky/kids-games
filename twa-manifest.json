@@ -3,7 +3,7 @@
   "host": "ssadovsky.github.io",
   "name": "Игры для детей",
   "launcherName": "Игры",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "any",
   "themeColor": "#8FD3F4",
   "themeColorDark": "#8FD3F4",
