@@ -1,0 +1,43 @@
+{
+  "packageId": "com.ssadovsky.kidsgames",
+  "host": "ssadovsky.github.io",
+  "name": "Игры для детей",
+  "launcherName": "Игры",
+  "display": "standalone",
+  "orientation": "any",
+  "themeColor": "#8FD3F4",
+  "themeColorDark": "#8FD3F4",
+  "navigationColor": "#8FD3F4",
+  "navigationColorDark": "#8FD3F4",
+  "backgroundColor": "#B6E6FF",
+  "enableNotifications": false,
+  "startUrl": "/kids-games/index.html",
+  "iconUrl": "https://ssadovsky.github.io/kids-games/icon-512.png",
+  "maskableIconUrl": "https://ssadovsky.github.io/kids-games/icon-512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android-upload.keystore",
+    "alias": "upload"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ssadovsky.github.io/kids-games/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://ssadovsky.github.io/kids-games/",
+  "minSdkVersion": 21,
+  "fingerprints": [
+    {
+      "name": "Upload key (self-managed, used before Play App Signing takes over)",
+      "value": "41:E3:9F:61:6B:5C:89:D5:8E:E0:58:1A:6C:29:71:8D:72:5B:6B:A2:89:24:C6:95:BB:E0:8F:63:B0:74:A9:6E"
+    }
+  ]
+}

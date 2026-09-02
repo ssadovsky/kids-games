@@ -1,0 +1,707 @@
+<!--
+DESIGN PLAN v2
+Color: ink #2B2140 (outline/text), sky #6EC6FF -> #BFEAFF, grass #4CAF50 -> #8FE06A,
+       sun #FFD23F, roof #FF6B4A (already built), wall #FFC857 (already built),
+       timber beams #6B4226, door #7B4B94, window frame #FFFFFF / panes #6EC6FF,
+       chimney #C0392B (already built), doorstep #B9B0A4, panel #FFF8EC
+Type: display "Comfortaa" for the win-card headline; body/UI "Nunito" for labels and buttons.
+Layout: full-bleed storybook scene. The house SHELL (roof + wall + chimney) is pre-built and
+      static — the child only places windows, the door, timber beams and a doorstep onto it.
+      No title banner (kept uncluttered). The restart control lives inside the bottom tray
+      (left of the pieces) so it never sits near/over the sun. After the house is finished, a
+      bigger, reusable set of yard decorations (tree, bushes, flowers, mushroom, stones, fence,
+      pond, fountain...) can be dragged onto the grass only, freely and as many times as wanted,
+      and tapping a placed decoration removes it again.
+-->
+<meta charset="UTF-8">
+<title>Домик мечты</title>
+<style>
+  :root{
+    --ink:#2B2140;
+    --sky-top:#6EC6FF;
+    --sky-bottom:#CFF1FF;
+    --grass-1:#8FE06A;
+    --grass-2:#4CAF50;
+    --sun:#FFD23F;
+    --panel:#FFF8EC;
+    --panel-border:#2B2140;
+    --roof:#FF6B4A;
+    --wall:#FFC857;
+    --door:#7B4B94;
+    --window-pane:#6EC6FF;
+    --chimney:#C0392B;
+    --beam:#6B4226;
+    --guide:#ffffff;
+    --accent-glow:#FFE066;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --sky-top:#274690;
+      --sky-bottom:#4F7FC9;
+      --grass-1:#3E8E4A;
+      --grass-2:#1F5C2C;
+      --panel:#2E2440;
+      --ink:#F5EFE6;
+      --guide:#F5EFE6;
+    }
+  }
+  :root[data-theme="dark"]{
+    --sky-top:#274690;
+    --sky-bottom:#4F7FC9;
+    --grass-1:#3E8E4A;
+    --grass-2:#1F5C2C;
+    --panel:#2E2440;
+    --ink:#F5EFE6;
+    --guide:#F5EFE6;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--sky-bottom);
+    color:var(--ink);
+    font-family:"Nunito", ui-rounded, "Segoe UI", sans-serif;
+    overflow:hidden;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+
+  .stage{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 62%);
+  }
+
+  /* ---------- scenery ---------- */
+  .sun{
+    position:absolute; top:3vmin; right:6vmin;
+    width:11vmin; height:11vmin; min-width:56px; min-height:56px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #FFF3BE, var(--sun) 70%);
+    border:0.5vmin solid var(--panel-border);
+    animation:pulse-sun 4s ease-in-out infinite;
+    z-index:1;
+  }
+  @keyframes pulse-sun{
+    0%,100%{ box-shadow:0 0 4vmin 0 rgba(255,210,63,0.35); }
+    50%{ box-shadow:0 0 6vmin 0.5vmin rgba(255,210,63,0.5); }
+  }
+  .cloud{
+    position:absolute;
+    background:#FFFFFF;
+    border:0.4vmin solid var(--panel-border);
+    border-radius:99px;
+    opacity:0.9;
+    z-index:1;
+  }
+  .cloud::before, .cloud::after{
+    content:"";
+    position:absolute;
+    background:#FFFFFF;
+    border:0.4vmin solid var(--panel-border);
+    border-radius:50%;
+  }
+  .cloud1{ top:8vmin; left:6vmin; width:12vmin; height:4.5vmin; animation:drift 30s linear infinite; }
+  .cloud1::before{ width:6vmin; height:6vmin; top:-3.2vmin; left:1vmin; }
+  .cloud1::after{ width:5vmin; height:5vmin; top:-2.6vmin; left:6vmin; }
+  .cloud2{ top:16vmin; left:70vmin; width:9vmin; height:3.6vmin; animation:drift 42s linear infinite; }
+  .cloud2::before{ width:4.6vmin; height:4.6vmin; top:-2.4vmin; left:1vmin; }
+  .cloud2::after{ width:3.8vmin; height:3.8vmin; top:-2vmin; left:4.6vmin; }
+  @keyframes drift{ from{ transform:translateX(0);} to{ transform:translateX(20vmin);} }
+
+  .hill{
+    position:absolute;
+    left:-10%; right:-10%; bottom:0;
+    height:36vmin;
+    background:linear-gradient(180deg, var(--grass-1), var(--grass-2));
+    border-top:0.6vmin solid var(--panel-border);
+    border-radius:50% 50% 0 0 / 8vmin 8vmin 0 0;
+    z-index:0;
+  }
+
+  /* ---------- house construction site ---------- */
+  .site{
+    position:relative;
+    flex:1;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    padding-bottom:6.5vmin;
+    z-index:2;
+  }
+  .house{
+    position:relative;
+    width:52vmin;
+    height:46vmin;
+    min-width:260px;
+  }
+
+  /* ---------- already-built shell (roof / wall / chimney) ---------- */
+  .body-part{ position:absolute; pointer-events:none; }
+  .body-part svg{ width:100%; height:100%; display:block; overflow:visible; }
+  #body-chimney{ left:31vmin; top:-3.5vmin; width:6vmin; height:12vmin; z-index:3; }
+  #body-roof{ left:9vmin; top:0; width:34vmin; height:17vmin; z-index:2; }
+  #body-wall{ left:9vmin; top:15.5vmin; width:34vmin; height:24.5vmin; z-index:0; }
+
+  .zone{
+    position:absolute;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:3;
+  }
+  .zone-outline{
+    position:absolute;
+    inset:0;
+    border:0.5vmin dashed var(--guide);
+    opacity:0.85;
+    border-radius:0.8vmin;
+    transition:box-shadow .15s ease, opacity .2s ease, background .2s ease;
+  }
+  .zone.filled .zone-outline{ opacity:0; pointer-events:none; }
+  .zone.active .zone-outline{
+    background:rgba(255,224,102,0.4);
+    box-shadow:0 0 0 0.6vmin rgba(255,224,102,0.55);
+  }
+  .zone-piece{
+    position:absolute;
+    inset:0;
+    opacity:0;
+    transform:scale(0.5);
+    transition:opacity .25s ease, transform .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  .zone.filled .zone-piece{ opacity:1; transform:scale(1); }
+  .zone svg{ width:100%; height:100%; display:block; overflow:visible; }
+
+  /* interactive slot positions, laid out over the static wall */
+  #zone-beam-top{ left:9vmin; top:15.5vmin; width:34vmin; height:3vmin; border-radius:0.4vmin; }
+  #zone-beam-left{ left:9vmin; top:18.5vmin; width:3vmin; height:21.5vmin; }
+  #zone-beam-right{ left:40vmin; top:18.5vmin; width:3vmin; height:21.5vmin; }
+  #zone-window-left{ left:13vmin; top:20vmin; width:7.5vmin; height:7.5vmin; }
+  #zone-window-left .zone-outline{ border-radius:0.7vmin; }
+  #zone-window-right{ left:30.5vmin; top:20vmin; width:7.5vmin; height:7.5vmin; }
+  #zone-window-right .zone-outline{ border-radius:0.7vmin; }
+  #zone-door{ left:22vmin; top:28.5vmin; width:9vmin; height:11.5vmin; }
+  #zone-door .zone-outline{ border-radius:1vmin 1vmin 0 0; }
+  #zone-doorstep{ left:19vmin; top:40vmin; width:15vmin; height:3vmin; border-radius:0.5vmin; }
+
+  /* ---------- decor drop layer (free placement, on grass only) ---------- */
+  .decor-piece{
+    position:absolute;
+    width:9vmin; height:9vmin;
+    z-index:4;
+    cursor:pointer;
+  }
+  .decor-piece svg{ width:100%; height:100%; display:block; overflow:visible; }
+  .decor-piece.removing{ animation:popaway .22s ease forwards; }
+
+  /* ---------- dock / tray ---------- */
+  .dock{
+    position:relative;
+    z-index:6;
+    display:flex;
+    align-items:center;
+    gap:1.6vmin;
+    padding:1.6vmin 3vmin calc(1.6vmin + env(safe-area-inset-bottom));
+    background:var(--panel);
+    border-top:0.6vmin solid var(--panel-border);
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-width:none;
+  }
+  .dock::-webkit-scrollbar{ display:none; }
+  .dock-hint{
+    font-family:"Nunito", sans-serif;
+    font-weight:800;
+    font-size:clamp(11px,1.7vmin,15px);
+    color:var(--ink);
+    opacity:0.7;
+    white-space:nowrap;
+    padding-right:0.6vmin;
+  }
+  .restart-btn{
+    flex:0 0 auto;
+    font-family:"Nunito", sans-serif;
+    font-weight:800;
+    color:var(--ink);
+    background:var(--accent-glow);
+    border:0.5vmin solid var(--panel-border);
+    border-radius:50%;
+    width:9.5vmin; height:9.5vmin;
+    min-width:52px; min-height:52px;
+    max-width:70px; max-height:70px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0.5vmin 0 rgba(43,33,64,0.25);
+    touch-action:manipulation;
+  }
+  .restart-btn:active{ transform:translateY(0.3vmin); box-shadow:0 0.2vmin 0 rgba(43,33,64,0.25); }
+  .restart-btn svg{ width:44%; height:44%; }
+  .piece-card{
+    position:relative;
+    flex:0 0 auto;
+    width:11.5vmin; height:11.5vmin;
+    min-width:70px; min-height:70px;
+    max-width:92px; max-height:92px;
+    background:#FFFFFF;
+    border:0.5vmin solid var(--panel-border);
+    border-radius:1.6vmin;
+    box-shadow:0 0.6vmin 0 rgba(43,33,64,0.18);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:grab;
+    touch-action:none;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .piece-card svg{ width:74%; height:74%; }
+  .piece-card.dragging{
+    position:fixed;
+    z-index:50;
+    cursor:grabbing;
+    box-shadow:0 1.2vmin 1.6vmin rgba(43,33,64,0.35);
+    transform:scale(1.12) rotate(-3deg);
+  }
+  .piece-card.snap-back{ animation:snapback .3s ease; }
+  @keyframes snapback{ from{ transform:scale(0.85);} to{ transform:scale(1);} }
+  .piece-card.pop-away{ animation:popaway .28s ease forwards; }
+  @keyframes popaway{ to{ transform:scale(0); opacity:0;} }
+
+  /* ---------- celebration ---------- */
+  .celebrate{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    z-index:100;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .4s ease;
+  }
+  .celebrate.show{ opacity:1; pointer-events:auto; }
+  .celebrate-card{
+    font-family:"Comfortaa", sans-serif;
+    font-weight:700;
+    text-align:center;
+    background:var(--panel);
+    border:0.6vmin solid var(--panel-border);
+    border-radius:2.4vmin;
+    padding:3.5vmin 5vmin;
+    box-shadow:0 1.2vmin 0 rgba(43,33,64,0.25);
+    transform:translateY(10px) scale(0.9);
+    transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+    max-width:86vw;
+  }
+  .celebrate.show .celebrate-card{ transform:translateY(0) scale(1); }
+  .celebrate-card h1{ margin:0 0 1vmin; font-size:clamp(20px,4vmin,36px); color:var(--ink); text-wrap:balance; }
+  .celebrate-card p{ margin:0 0 2vmin; font-family:"Nunito",sans-serif; font-weight:700; font-size:clamp(12px,2vmin,17px); opacity:0.75; }
+  .celebrate-card button{
+    font-family:"Nunito",sans-serif;
+    font-weight:800;
+    font-size:clamp(14px,2.2vmin,18px);
+    background:var(--accent-glow);
+    border:0.5vmin solid var(--panel-border);
+    border-radius:99px;
+    padding:1.1vmin 3vmin;
+    cursor:pointer;
+    box-shadow:0 0.6vmin 0 rgba(43,33,64,0.25);
+    pointer-events:auto;
+  }
+  .celebrate-card button:active{ transform:translateY(0.4vmin); box-shadow:0 0.2vmin 0 rgba(43,33,64,0.25); }
+
+  #confetti{ position:fixed; inset:0; z-index:99; pointer-events:none; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+
+  /* ---------- small / narrow screens ---------- */
+  @media (max-height:480px){
+    .house{ height:42vmin; }
+    .hill{ height:30vmin; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+
+<div class="stage" id="stage">
+
+  <div class="sun"></div>
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+
+  <div class="site">
+    <div class="hill" id="hill"></div>
+    <div class="house" id="house">
+
+      <!-- ===== already-built shell: not draggable, always visible ===== -->
+      <div class="body-part" id="body-roof">
+        <svg viewBox="0 0 100 100"><polygon points="50,6 96,94 4,94" fill="#FF6B4A" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/><polygon points="50,6 96,94 4,94" fill="none" stroke="#E8532F" stroke-width="2" stroke-dasharray="0 14 14" stroke-linecap="round"/></svg>
+      </div>
+      <div class="body-part" id="body-chimney">
+        <svg viewBox="0 0 40 70"><rect x="2" y="2" width="36" height="66" rx="4" fill="#C0392B" stroke="#2B2140" stroke-width="4"/><rect x="0" y="0" width="40" height="12" rx="3" fill="#8E2A20" stroke="#2B2140" stroke-width="4"/></svg>
+      </div>
+      <div class="body-part" id="body-wall">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none"><rect x="2" y="2" width="96" height="96" rx="6" fill="#FFC857" stroke="#2B2140" stroke-width="4"/></svg>
+      </div>
+
+      <!-- ===== interactive slots: filled by dragging pieces from the tray ===== -->
+      <div class="zone" id="zone-beam-top" data-slot="beam-top"><div class="zone-outline"></div><div class="zone-piece"></div></div>
+      <div class="zone" id="zone-beam-left" data-slot="beam-left"><div class="zone-outline"></div><div class="zone-piece"></div></div>
+      <div class="zone" id="zone-beam-right" data-slot="beam-right"><div class="zone-outline"></div><div class="zone-piece"></div></div>
+      <div class="zone" id="zone-window-left" data-slot="window-left"><div class="zone-outline"></div><div class="zone-piece"></div></div>
+      <div class="zone" id="zone-window-right" data-slot="window-right"><div class="zone-outline"></div><div class="zone-piece"></div></div>
+      <div class="zone" id="zone-door" data-slot="door"><div class="zone-outline"></div><div class="zone-piece"></div></div>
+      <div class="zone" id="zone-doorstep" data-slot="doorstep"><div class="zone-outline"></div><div class="zone-piece"></div></div>
+
+    </div>
+  </div>
+
+  <div class="dock" id="dock">
+    <button class="restart-btn" id="restartBtn" aria-label="Начать заново" title="Начать заново">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>
+    </button>
+    <div class="dock-hint" id="dockHint">Тяни детали сюда 👉</div>
+    <!-- piece cards are generated by script from pieceDefs -->
+  </div>
+
+  <div class="celebrate" id="celebrate">
+    <div class="celebrate-card">
+      <h1>Ура! Домик готов! 🎉</h1>
+      <p>Теперь можно украсить дворик — дерево, цветы, пруд, фонтан и многое другое. Их можно ставить сколько хочешь, а чтобы убрать — просто нажми на украшение ещё раз!</p>
+      <button id="celebrateClose">Играть дальше</button>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var stage = document.getElementById('stage');
+  var house = document.getElementById('house');
+  var hill = document.getElementById('hill');
+  var dock = document.getElementById('dock');
+  var dockHint = document.getElementById('dockHint');
+  var celebrate = document.getElementById('celebrate');
+  var restartBtn = document.getElementById('restartBtn');
+
+  /* ---------------- piece definitions (the house puzzle) ---------------- */
+  var windowSvg = '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><rect x="4" y="4" width="92" height="92" rx="8" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/><rect x="10" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="10" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/></svg>';
+  var doorSvg = '<svg viewBox="0 0 60 80"><rect x="3" y="3" width="54" height="74" rx="8" fill="#7B4B94" stroke="#2B2140" stroke-width="5"/><rect x="3" y="3" width="54" height="74" rx="8" fill="none" stroke="#5F3873" stroke-width="1.5"/><line x1="30" y1="8" x2="30" y2="72" stroke="#5F3873" stroke-width="2"/><circle cx="44" cy="40" r="4.5" fill="#FFD23F" stroke="#2B2140" stroke-width="2"/></svg>';
+
+  var pieceDefs = [
+    { slot:'window-left',  icon:windowSvg, zone:windowSvg },
+    { slot:'window-right', icon:windowSvg, zone:windowSvg },
+    { slot:'door', icon:doorSvg, zone:doorSvg },
+    { slot:'beam-top',
+      icon:'<svg viewBox="0 0 100 100"><rect x="8" y="38" width="84" height="24" rx="5" fill="#6B4226" stroke="#2B2140" stroke-width="5"/><line x1="18" y1="44" x2="82" y2="44" stroke="#8A5A32" stroke-width="3"/><line x1="18" y1="56" x2="82" y2="56" stroke="#4E2E19" stroke-width="3"/></svg>',
+      zone:'<svg viewBox="0 0 200 18" preserveAspectRatio="none"><rect x="2" y="2" width="196" height="14" rx="4" fill="#6B4226" stroke="#2B2140" stroke-width="4"/><line x1="0" y1="6" x2="200" y2="6" stroke="#8A5A32" stroke-width="2"/><line x1="0" y1="12" x2="200" y2="12" stroke="#4E2E19" stroke-width="2"/></svg>' },
+    { slot:'beam-left',
+      icon:'<svg viewBox="0 0 100 100"><rect x="38" y="6" width="24" height="88" rx="5" fill="#6B4226" stroke="#2B2140" stroke-width="5"/><line x1="44" y1="14" x2="44" y2="86" stroke="#8A5A32" stroke-width="3"/><line x1="56" y1="14" x2="56" y2="86" stroke="#4E2E19" stroke-width="3"/></svg>',
+      zone:'<svg viewBox="0 0 18 140" preserveAspectRatio="none"><rect x="2" y="2" width="14" height="136" rx="4" fill="#6B4226" stroke="#2B2140" stroke-width="4"/><line x1="6" y1="0" x2="6" y2="140" stroke="#8A5A32" stroke-width="2"/><line x1="12" y1="0" x2="12" y2="140" stroke="#4E2E19" stroke-width="2"/></svg>' },
+    { slot:'beam-right',
+      icon:'<svg viewBox="0 0 100 100"><rect x="38" y="6" width="24" height="88" rx="5" fill="#6B4226" stroke="#2B2140" stroke-width="5"/><line x1="44" y1="14" x2="44" y2="86" stroke="#8A5A32" stroke-width="3"/><line x1="56" y1="14" x2="56" y2="86" stroke="#4E2E19" stroke-width="3"/></svg>',
+      zone:'<svg viewBox="0 0 18 140" preserveAspectRatio="none"><rect x="2" y="2" width="14" height="136" rx="4" fill="#6B4226" stroke="#2B2140" stroke-width="4"/><line x1="6" y1="0" x2="6" y2="140" stroke="#8A5A32" stroke-width="2"/><line x1="12" y1="0" x2="12" y2="140" stroke="#4E2E19" stroke-width="2"/></svg>' },
+    { slot:'doorstep',
+      icon:'<svg viewBox="0 0 100 100"><rect x="6" y="58" width="88" height="30" rx="6" fill="#B9B0A4" stroke="#2B2140" stroke-width="5"/><line x1="16" y1="70" x2="84" y2="70" stroke="#8B8175" stroke-width="3"/></svg>',
+      zone:'<svg viewBox="0 0 150 30" preserveAspectRatio="none"><rect x="2" y="2" width="146" height="26" rx="5" fill="#B9B0A4" stroke="#2B2140" stroke-width="4"/><line x1="10" y1="15" x2="140" y2="15" stroke="#8B8175" stroke-width="2.5"/></svg>' }
+  ];
+  var mainSlots = pieceDefs.map(function(d){ return d.slot; });
+  var filledCount = 0;
+  var decorAdded = false;
+
+  /* ---------------- yard decoration definitions (free, reusable, removable) ---------------- */
+  var decorDefs = [
+    { id:'tree', w:11, h:14, svg:'<svg viewBox="0 0 60 80"><rect x="24" y="52" width="12" height="24" rx="3" fill="#8A5A32" stroke="#2B2140" stroke-width="4"/><circle cx="30" cy="34" r="22" fill="#3D8B45" stroke="#2B2140" stroke-width="4"/><circle cx="16" cy="44" r="14" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/><circle cx="44" cy="44" r="14" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'bush', w:8, h:6.5, svg:'<svg viewBox="0 0 80 60"><circle cx="24" cy="38" r="18" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/><circle cx="46" cy="30" r="22" fill="#5DBE5D" stroke="#2B2140" stroke-width="4"/><circle cx="62" cy="40" r="15" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'flower-pink', w:6, h:8, svg:'<svg viewBox="0 0 60 80"><rect x="27" y="40" width="6" height="34" fill="#3D8B45" stroke="#2B2140" stroke-width="3"/><g stroke="#2B2140" stroke-width="3"><circle cx="30" cy="24" r="9" fill="#FF6FA5"/><circle cx="18" cy="30" r="9" fill="#FF6FA5"/><circle cx="42" cy="30" r="9" fill="#FF6FA5"/><circle cx="24" cy="40" r="9" fill="#FF6FA5"/><circle cx="36" cy="40" r="9" fill="#FF6FA5"/></g><circle cx="30" cy="32" r="8" fill="#FFD23F" stroke="#2B2140" stroke-width="3"/></svg>' },
+    { id:'flower-yellow', w:6, h:8, svg:'<svg viewBox="0 0 60 80"><rect x="27" y="40" width="6" height="34" fill="#3D8B45" stroke="#2B2140" stroke-width="3"/><g stroke="#2B2140" stroke-width="3"><circle cx="30" cy="24" r="9" fill="#FFD23F"/><circle cx="18" cy="30" r="9" fill="#FFD23F"/><circle cx="42" cy="30" r="9" fill="#FFD23F"/><circle cx="24" cy="40" r="9" fill="#FFD23F"/><circle cx="36" cy="40" r="9" fill="#FFD23F"/></g><circle cx="30" cy="32" r="8" fill="#FF6FA5" stroke="#2B2140" stroke-width="3"/></svg>' },
+    { id:'mushroom', w:6, h:6, svg:'<svg viewBox="0 0 60 60"><rect x="24" y="34" width="12" height="20" rx="3" fill="#FFF3D6" stroke="#2B2140" stroke-width="4"/><path d="M8 34 a22 20 0 0 1 44 0 z" fill="#E4483A" stroke="#2B2140" stroke-width="4"/><circle cx="20" cy="24" r="3.4" fill="#FFF3D6"/><circle cx="32" cy="18" r="3" fill="#FFF3D6"/><circle cx="42" cy="26" r="3.4" fill="#FFF3D6"/></svg>' },
+    { id:'stones', w:8, h:5, svg:'<svg viewBox="0 0 80 50"><ellipse cx="22" cy="36" rx="16" ry="10" fill="#B9B0A4" stroke="#2B2140" stroke-width="4"/><ellipse cx="48" cy="30" rx="20" ry="13" fill="#CFC7BB" stroke="#2B2140" stroke-width="4"/><ellipse cx="66" cy="38" rx="12" ry="8" fill="#B9B0A4" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'fence', w:11, h:6, svg:'<svg viewBox="0 0 110 60"><line x1="4" y1="34" x2="106" y2="34" stroke="#8A5A32" stroke-width="6"/><line x1="4" y1="46" x2="106" y2="46" stroke="#8A5A32" stroke-width="6"/><g fill="#EADFC8" stroke="#2B2140" stroke-width="4"><rect x="4" y="10" width="14" height="42" rx="3"/><rect x="32" y="10" width="14" height="42" rx="3"/><rect x="60" y="10" width="14" height="42" rx="3"/><rect x="88" y="10" width="14" height="42" rx="3"/></g></svg>' },
+    { id:'pond', w:15, h:10, svg:'<svg viewBox="0 0 150 100"><ellipse cx="75" cy="55" rx="68" ry="34" fill="#4FA6D8" stroke="#2B2140" stroke-width="5"/><ellipse cx="75" cy="55" rx="52" ry="24" fill="#6EC6FF" stroke="#2B2140" stroke-width="2" opacity="0.7"/><path d="M20 82 q6 -14 0 -26" fill="none" stroke="#3D8B45" stroke-width="5" stroke-linecap="round"/><path d="M30 86 q6 -16 0 -30" fill="none" stroke="#3D8B45" stroke-width="5" stroke-linecap="round"/></svg>' },
+    { id:'fountain', w:12, h:14, svg:'<svg viewBox="0 0 100 120"><ellipse cx="50" cy="100" rx="46" ry="14" fill="#CFC7BB" stroke="#2B2140" stroke-width="5"/><ellipse cx="50" cy="96" rx="34" ry="9" fill="#8FD8F2" stroke="#2B2140" stroke-width="3"/><rect x="42" y="46" width="16" height="42" fill="#CFC7BB" stroke="#2B2140" stroke-width="5"/><ellipse cx="50" cy="46" rx="20" ry="7" fill="#CFC7BB" stroke="#2B2140" stroke-width="5"/><ellipse cx="50" cy="42" rx="10" ry="4.5" fill="#8FD8F2" stroke="#2B2140" stroke-width="3"/><path d="M50 42 L50 14 M50 20 L38 8 M50 20 L62 8" stroke="#8FD8F2" stroke-width="4" stroke-linecap="round" fill="none"/></svg>' }
+  ];
+
+  /* ---------------- audio ---------------- */
+  var actx = null;
+  function ensureAudio(){
+    if(!actx){
+      try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; }
+    } else if(actx.state === 'suspended'){
+      actx.resume();
+    }
+  }
+  function chime(freqs, dur){
+    if(!actx) return;
+    dur = dur || 0.35;
+    freqs.forEach(function(f, i){
+      var o = actx.createOscillator();
+      var g = actx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      g.gain.value = 0.0001;
+      o.connect(g); g.connect(actx.destination);
+      var t = actx.currentTime + i*0.1;
+      g.gain.exponentialRampToValueAtTime(0.22, t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      o.start(t); o.stop(t+dur+0.05);
+    });
+  }
+  function successChime(){ chime([523.25, 659.25, 783.99]); } // C E G
+  function winChime(){ chime([523.25, 659.25, 783.99, 1046.5], 0.5); }
+  function missSound(){ chime([220, 196], 0.18); }
+  function popSound(){ chime([392, 330], 0.14); }
+
+  /* ---------------- drag core ---------------- */
+  function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
+
+  function makeDraggable(card, opts){
+    card.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      ensureAudio();
+      try{ card.setPointerCapture(e.pointerId); }catch(err){}
+      var rect = card.getBoundingClientRect();
+      var offX = e.clientX - rect.left;
+      var offY = e.clientY - rect.top;
+      var w = rect.width, h = rect.height;
+      card.classList.add('dragging');
+      card.style.width = w+'px';
+      card.style.height = h+'px';
+      card.style.left = rect.left+'px';
+      card.style.top = rect.top+'px';
+
+      function move(ev){
+        var x = ev.clientX - offX;
+        var y = ev.clientY - offY;
+        card.style.left = x+'px';
+        card.style.top = y+'px';
+        opts.onMove && opts.onMove(x + w/2, y + h/2);
+      }
+      function up(ev){
+        card.removeEventListener('pointermove', move);
+        card.removeEventListener('pointerup', up);
+        card.removeEventListener('pointercancel', up);
+        card.classList.remove('dragging');
+        var cx = (ev.clientX!=null? ev.clientX-offX : rect.left) + w/2;
+        var cy = (ev.clientY!=null? ev.clientY-offY : rect.top) + h/2;
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.height = '';
+        opts.onDrop(card, cx, cy);
+      }
+      card.addEventListener('pointermove', move);
+      card.addEventListener('pointerup', up);
+      card.addEventListener('pointercancel', up);
+    });
+  }
+
+  /* ---------------- build the house puzzle pieces ---------------- */
+  function addPieceCard(def){
+    var card = document.createElement('div');
+    card.className = 'piece-card';
+    card.setAttribute('data-slot', def.slot);
+    card.innerHTML = def.icon;
+    dock.appendChild(card);
+    var zone = document.getElementById('zone-'+def.slot);
+    var zonePieceHolder = zone.querySelector('.zone-piece');
+    zonePieceHolder.innerHTML = def.zone;
+    makeDraggable(card, {
+      onMove: function(cx, cy){
+        var zr = zone.getBoundingClientRect();
+        var zcx = zr.left + zr.width/2, zcy = zr.top + zr.height/2;
+        var threshold = Math.max(zr.width, zr.height) * 0.85 + 40;
+        if(!zone.classList.contains('filled') && dist(cx,cy,zcx,zcy) < threshold){
+          zone.classList.add('active');
+        } else {
+          zone.classList.remove('active');
+        }
+      },
+      onDrop: function(card, cx, cy){
+        zone.classList.remove('active');
+        var zr = zone.getBoundingClientRect();
+        var zcx = zr.left + zr.width/2, zcy = zr.top + zr.height/2;
+        var threshold = Math.max(zr.width, zr.height) * 0.85 + 40;
+        if(!zone.classList.contains('filled') && dist(cx,cy,zcx,zcy) < threshold){
+          zone.classList.add('filled');
+          card.classList.add('pop-away');
+          successChime();
+          filledCount++;
+          setTimeout(function(){ card.remove(); }, 260);
+          if(filledCount >= mainSlots.length){
+            setTimeout(onHouseComplete, 400);
+          }
+        } else {
+          card.classList.add('snap-back');
+          missSound();
+          setTimeout(function(){ card.classList.remove('snap-back'); }, 320);
+        }
+      }
+    });
+  }
+
+  function buildPieces(){
+    pieceDefs.forEach(addPieceCard);
+  }
+
+  /* ---------------- yard decoration: free placement on grass, tap to remove ---------------- */
+  function isOnGrass(cx, cy){
+    var hr = hill.getBoundingClientRect();
+    var margin = 6;
+    if(cx < hr.left + margin || cx > hr.right - margin) return false;
+    if(cy < hr.top + margin || cy > hr.bottom - margin) return false;
+    // keep the house itself clear so decorations don't cover it
+    var houseR = house.getBoundingClientRect();
+    var pad = 6;
+    var overHouse = cx > houseR.left - pad && cx < houseR.right + pad && cy > houseR.top - pad && cy < houseR.bottom + pad;
+    if(overHouse) return false;
+    return true;
+  }
+
+  function removePlaced(el){
+    if(el.classList.contains('removing')) return;
+    el.classList.add('removing');
+    popSound();
+    setTimeout(function(){ el.remove(); }, 220);
+  }
+
+  function addDecorCard(def){
+    var card = document.createElement('div');
+    card.className = 'piece-card';
+    card.innerHTML = def.svg;
+    dock.appendChild(card);
+    makeDraggable(card, {
+      onMove: function(){},
+      onDrop: function(card, cx, cy){
+        if(isOnGrass(cx, cy)){
+          var placed = document.createElement('div');
+          placed.className = 'decor-piece';
+          placed.innerHTML = def.svg;
+          var vmin = Math.min(window.innerWidth, window.innerHeight) / 100;
+          placed.style.width = def.w + 'vmin';
+          placed.style.height = def.h + 'vmin';
+          placed.style.left = (cx - stage.getBoundingClientRect().left - (def.w*vmin)/2) + 'px';
+          placed.style.top = (cy - stage.getBoundingClientRect().top - (def.h*vmin)/2) + 'px';
+          placed.style.transform = 'scale(0.3)';
+          placed.style.opacity = '0';
+          placed.style.transition = 'transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s ease';
+          stage.appendChild(placed);
+          requestAnimationFrame(function(){
+            placed.style.transform = 'scale(1)';
+            placed.style.opacity = '1';
+          });
+          placed.addEventListener('click', function(){ removePlaced(placed); });
+          successChime();
+          // the card stays in the tray so the same decoration can be placed again
+        } else {
+          card.classList.add('snap-back');
+          missSound();
+          setTimeout(function(){ card.classList.remove('snap-back'); }, 320);
+        }
+      }
+    });
+  }
+
+  /* ---------------- celebration ---------------- */
+  function onHouseComplete(){
+    winChime();
+    celebrate.classList.add('show');
+    launchConfetti();
+    if(!decorAdded){
+      decorAdded = true;
+      dockHint.textContent = 'Укрась дворик 🌳🌸 (нажми, чтобы убрать)';
+      decorDefs.forEach(addDecorCard);
+    }
+  }
+  document.getElementById('celebrateClose').addEventListener('click', function(){
+    celebrate.classList.remove('show');
+  });
+
+  /* ---------------- confetti ---------------- */
+  var canvas = document.getElementById('confetti');
+  var ctx = canvas.getContext('2d');
+  var confettiParticles = [];
+  var confettiRAF = null;
+  var confettiColors = ['#FF6B4A','#FFC857','#7B4B94','#6EC6FF','#4CAF50','#FFD23F'];
+
+  function resizeCanvas(){
+    canvas.width = window.innerWidth * devicePixelRatio;
+    canvas.height = window.innerHeight * devicePixelRatio;
+    canvas.style.width = window.innerWidth+'px';
+    canvas.style.height = window.innerHeight+'px';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function launchConfetti(){
+    confettiParticles = [];
+    var n = 70;
+    for(var i=0;i<n;i++){
+      confettiParticles.push({
+        x: Math.random()*window.innerWidth,
+        y: -20 - Math.random()*200,
+        vy: 2 + Math.random()*3,
+        vx: -1.5 + Math.random()*3,
+        size: 6 + Math.random()*8,
+        rot: Math.random()*Math.PI*2,
+        vr: -0.15 + Math.random()*0.3,
+        color: confettiColors[i % confettiColors.length]
+      });
+    }
+    var start = performance.now();
+    if(confettiRAF) cancelAnimationFrame(confettiRAF);
+    function frame(now){
+      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+      ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+      var elapsed = now - start;
+      confettiParticles.forEach(function(p){
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+        ctx.restore();
+      });
+      if(elapsed < 3200){
+        confettiRAF = requestAnimationFrame(frame);
+      } else {
+        ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+      }
+    }
+    confettiRAF = requestAnimationFrame(frame);
+  }
+
+  /* ---------------- restart ---------------- */
+  function restart(){
+    ensureAudio();
+    celebrate.classList.remove('show');
+    if(confettiRAF){ cancelAnimationFrame(confettiRAF); ctx.clearRect(0,0,window.innerWidth,window.innerHeight); }
+    document.querySelectorAll('.zone').forEach(function(z){
+      z.classList.remove('filled','active');
+      var holder = z.querySelector('.zone-piece');
+      if(holder) holder.innerHTML = '';
+    });
+    document.querySelectorAll('.decor-piece').forEach(function(el){ el.remove(); });
+    document.querySelectorAll('.dock .piece-card').forEach(function(el){ el.remove(); });
+    filledCount = 0;
+    decorAdded = false;
+    dockHint.textContent = 'Тяни детали сюда 👉';
+    buildPieces();
+  }
+  restartBtn.addEventListener('click', restart);
+
+  /* ---------------- go ---------------- */
+  buildPieces();
+
+})();
+</script>

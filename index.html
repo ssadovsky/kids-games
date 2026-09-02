@@ -121,6 +121,10 @@
     text-align:center;
   }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#8FD3F4">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-512.png">
 </head>
 <body>
   <div class="sun"></div>
@@ -165,5 +169,12 @@
     </div>
     <footer>сделано с любовью 💛</footer>
   </div>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
 </body>
 </html>

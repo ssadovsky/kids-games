@@ -1,0 +1,12 @@
+# Секреты подписи Android — никогда не коммитить
+SECRETS_DO_NOT_COMMIT/
+*.keystore
+*.jks
+key.properties
+
+# Локальные результаты сборки Bubblewrap/Gradle, если кто-то соберёт руками
+/android/
+app-release-signed.apk
+app-release-bundle.aab
+*.apk
+*.aab

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ssadovsky.kidsgames",
+      "sha256_cert_fingerprints": [
+        "41:E3:9F:61:6B:5C:89:D5:8E:E0:58:1A:6C:29:71:8D:72:5B:6B:A2:89:24:C6:95:BB:E0:8F:63:B0:74:A9:6E"
+      ]
+    }
+  }
+]
