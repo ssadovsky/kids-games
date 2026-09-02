@@ -58,13 +58,20 @@ jobs:
           cat "$HOME/.bubblewrap/config.json"
 
       - name: Regenerate Android project from twa-manifest.json
-        run: bubblewrap update --manifest=./twa-manifest.json
+        run: |
+          # Feed blank lines as a safety net: any leftover interactive prompt
+          # just accepts bubblewrap's default (== the value already in
+          # twa-manifest.json), instead of hanging forever with no input.
+          printf '%.0s\n' {1..30} > /tmp/answers.txt
+          bubblewrap update --manifest=./twa-manifest.json --skipVersionUpgrade < /tmp/answers.txt
 
       - name: Build signed APK and AAB
         env:
           BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.BUBBLEWRAP_KEYSTORE_PASSWORD }}
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.BUBBLEWRAP_KEY_PASSWORD }}
-        run: bubblewrap build --skipPwaValidation
+        run: |
+          printf '%.0s\n' {1..30} > /tmp/answers.txt
+          bubblewrap build --skipPwaValidation < /tmp/answers.txt
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
