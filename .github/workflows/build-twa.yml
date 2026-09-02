@@ -43,9 +43,21 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android-upload.keystore
 
+      - name: Point Bubblewrap at the already-installed JDK/Android SDK
+        # Without this, `bubblewrap update`/`build` interactively asks
+        # "Do you want Bubblewrap to install the JDK?" and hangs forever
+        # in CI (no stdin), failing with exit code 130.
+        run: |
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" << EOF
+          {
+            "jdkPath": "$JAVA_HOME",
+            "androidSdkPath": "$ANDROID_HOME"
+          }
+          EOF
+          cat "$HOME/.bubblewrap/config.json"
+
       - name: Regenerate Android project from twa-manifest.json
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: bubblewrap update --manifest=./twa-manifest.json
 
       - name: Build signed APK and AAB
