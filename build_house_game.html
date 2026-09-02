@@ -1,0 +1,851 @@
+<!--
+DESIGN PLAN v3 — "Мини-отель у моря"
+Color: ink #2B2140 (outlines/text), sky #6EC6FF -> #CFF1FF, sea #2E7FB0 -> #4FA6D8,
+       sand #F2D9A6, grass #8FE06A -> #4CAF50, sun #FFD23F,
+       roof #C1543A (already built), floor2 wall #F3DFB4 (already built),
+       floor1 wall #EAD2A0 (already built), main door #7B4B94, service door #4C8C86,
+       window frame #FFFFFF / panes #6EC6FF, panel #FFF8EC
+Type: display "Comfortaa" for the win-card headline; body/UI "Nunito" for labels/buttons.
+Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then the green yard
+      in front where a 3-storey hotel shell stands ALREADY BUILT (roof, two wall storeys).
+      The child only places the pieces: 8 different windows, 2 different doors, a cat-flap,
+      roof dormer windows + satellite dish + solar panel, a wall lantern and the entrance
+      stairs (15 pieces total — more play than the old 5-piece house). Once it's finished, a
+      big reusable seaside-yard decoration set (trees, bushes, flowers, a pond, a fountain,
+      street lamp, sun loungers, a beach umbrella, a café table, a beach kiosk...) can be
+      dragged onto the grass only, any number of times, and tapping a placed one removes it.
+      No title banner. Restart lives inside the bottom tray so it never covers the sun.
+-->
+<meta charset="UTF-8">
+<title>Мини-отель у моря</title>
+<style>
+  :root{
+    --ink:#2B2140;
+    --sky-top:#6EC6FF;
+    --sky-bottom:#CFF1FF;
+    --sea-top:#2E7FB0;
+    --sea-bottom:#4FA6D8;
+    --sand:#F2D9A6;
+    --sand-dark:#E4C083;
+    --grass-1:#8FE06A;
+    --grass-2:#4CAF50;
+    --sun:#FFD23F;
+    --panel:#FFF8EC;
+    --panel-border:#2B2140;
+    --guide:#ffffff;
+    --accent-glow:#FFE066;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --sky-top:#274690;
+      --sky-bottom:#4F7FC9;
+      --sea-top:#123A5C;
+      --sea-bottom:#1F5C86;
+      --sand:#C9A86B;
+      --sand-dark:#B08F55;
+      --grass-1:#3E8E4A;
+      --grass-2:#1F5C2C;
+      --panel:#2E2440;
+      --ink:#F5EFE6;
+      --guide:#F5EFE6;
+    }
+  }
+  :root[data-theme="dark"]{
+    --sky-top:#274690;
+    --sky-bottom:#4F7FC9;
+    --sea-top:#123A5C;
+    --sea-bottom:#1F5C86;
+    --sand:#C9A86B;
+    --sand-dark:#B08F55;
+    --grass-1:#3E8E4A;
+    --grass-2:#1F5C2C;
+    --panel:#2E2440;
+    --ink:#F5EFE6;
+    --guide:#F5EFE6;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--sky-bottom);
+    color:var(--ink);
+    font-family:"Nunito", ui-rounded, "Segoe UI", sans-serif;
+    overflow:hidden;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+
+  .stage{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 62%);
+  }
+
+  /* ---------- sky scenery ---------- */
+  .sun{
+    position:absolute; top:3vmin; right:6vmin;
+    width:11vmin; height:11vmin; min-width:56px; min-height:56px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #FFF3BE, var(--sun) 70%);
+    border:0.5vmin solid var(--panel-border);
+    animation:pulse-sun 4s ease-in-out infinite;
+    z-index:1;
+  }
+  @keyframes pulse-sun{
+    0%,100%{ box-shadow:0 0 4vmin 0 rgba(255,210,63,0.35); }
+    50%{ box-shadow:0 0 6vmin 0.5vmin rgba(255,210,63,0.5); }
+  }
+  .cloud{
+    position:absolute;
+    background:#FFFFFF;
+    border:0.4vmin solid var(--panel-border);
+    border-radius:99px;
+    opacity:0.9;
+    z-index:1;
+  }
+  .cloud::before, .cloud::after{
+    content:"";
+    position:absolute;
+    background:#FFFFFF;
+    border:0.4vmin solid var(--panel-border);
+    border-radius:50%;
+  }
+  .cloud1{ top:6vmin; left:6vmin; width:12vmin; height:4.5vmin; animation:drift 30s linear infinite; }
+  .cloud1::before{ width:6vmin; height:6vmin; top:-3.2vmin; left:1vmin; }
+  .cloud1::after{ width:5vmin; height:5vmin; top:-2.6vmin; left:6vmin; }
+  .cloud2{ top:13vmin; left:70vmin; width:9vmin; height:3.6vmin; animation:drift 42s linear infinite; }
+  .cloud2::before{ width:4.6vmin; height:4.6vmin; top:-2.4vmin; left:1vmin; }
+  .cloud2::after{ width:3.8vmin; height:3.8vmin; top:-2vmin; left:4.6vmin; }
+  @keyframes drift{ from{ transform:translateX(0);} to{ transform:translateX(20vmin);} }
+
+  /* ---------- straight horizon: sea + beach + grass ---------- */
+  .sea{
+    position:absolute; left:0; right:0; bottom:32vmin; height:9vmin;
+    background:linear-gradient(180deg, var(--sea-top), var(--sea-bottom));
+    border-top:0.5vmin solid var(--panel-border);
+    overflow:hidden;
+    z-index:0;
+  }
+  .sea .wave{ position:absolute; left:-10%; width:120%; height:0.5vmin; background:rgba(255,255,255,0.35); border-radius:99px; }
+  .beach{
+    position:absolute; left:0; right:0; bottom:28vmin; height:4vmin;
+    background:linear-gradient(180deg, var(--sand), var(--sand-dark));
+    border-top:0.4vmin solid var(--panel-border);
+    z-index:0;
+  }
+  .pier{
+    position:absolute; right:-6vmin; bottom:29vmin; width:22vmin; height:7vmin;
+    z-index:1;
+    pointer-events:none;
+  }
+  .pier svg{ width:100%; height:100%; display:block; overflow:visible; }
+  .grass{
+    position:absolute; left:0; right:0; bottom:0; height:28vmin;
+    background:linear-gradient(180deg, var(--grass-1), var(--grass-2));
+    border-top:0.6vmin solid var(--panel-border);
+    z-index:0;
+  }
+
+  /* ---------- house construction site ---------- */
+  .site{
+    position:relative;
+    flex:1;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    padding-bottom:4vmin;
+    z-index:2;
+  }
+  .house{
+    position:relative;
+    width:64vmin;
+    height:56vmin;
+    min-width:300px;
+  }
+
+  /* ---------- already-built shell (roof + two wall storeys) ---------- */
+  .body-part{ position:absolute; pointer-events:none; }
+  .body-part svg{ width:100%; height:100%; display:block; overflow:visible; }
+  #body-roof{ left:0; top:0; width:64vmin; height:15vmin; z-index:2; }
+  #body-wall2{ left:0; top:14.5vmin; width:64vmin; height:17vmin; z-index:0; }
+  #body-wall1{ left:0; top:31vmin; width:64vmin; height:21vmin; z-index:0; }
+
+  .zone{
+    position:absolute;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:3;
+  }
+  .zone-outline{
+    position:absolute;
+    inset:0;
+    border:0.45vmin dashed var(--guide);
+    opacity:0.85;
+    border-radius:0.6vmin;
+    transition:box-shadow .15s ease, opacity .2s ease, background .2s ease;
+  }
+  .zone.filled .zone-outline{ opacity:0; pointer-events:none; }
+  .zone.reachable .zone-outline{
+    opacity:1;
+    background:rgba(255,224,102,0.14);
+    border-color:rgba(255,224,102,0.9);
+  }
+  .zone.active .zone-outline{
+    background:rgba(255,224,102,0.4);
+    box-shadow:0 0 0 0.5vmin rgba(255,224,102,0.55);
+  }
+  .zone-piece{
+    position:absolute;
+    inset:0;
+    opacity:0;
+    transform:scale(0.5);
+    transition:opacity .25s ease, transform .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  .zone.filled .zone-piece{ opacity:1; transform:scale(1); }
+  .zone svg{ width:100%; height:100%; display:block; overflow:visible; }
+
+  /* ---------- decor drop layer (free placement, on grass only) ---------- */
+  .decor-piece{
+    position:absolute;
+    z-index:4;
+    cursor:pointer;
+  }
+  .decor-piece svg{ width:100%; height:100%; display:block; overflow:visible; }
+  .decor-piece.removing{ animation:popaway .22s ease forwards; }
+
+  /* ---------- dock / tray ---------- */
+  .dock{
+    position:relative;
+    z-index:6;
+    display:flex;
+    align-items:center;
+    gap:1.4vmin;
+    padding:1.4vmin 1.6vmin calc(1.4vmin + env(safe-area-inset-bottom));
+    background:var(--panel);
+    border-top:0.6vmin solid var(--panel-border);
+  }
+  .dock-viewport{
+    position:relative;
+    flex:1 1 auto;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:1vmin;
+  }
+  .dock-scroll{
+    display:flex;
+    align-items:center;
+    gap:1.4vmin;
+    flex:1 1 auto;
+    min-width:0;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-behavior:smooth;
+    padding:0.6vmin 0.2vmin;
+    scrollbar-width:thin;
+  }
+  .dock-scroll::-webkit-scrollbar{ height:6px; }
+  .dock-scroll::-webkit-scrollbar-thumb{ background:rgba(43,33,64,0.25); border-radius:99px; }
+  .dock-arrow{
+    flex:0 0 auto;
+    width:6.4vmin; height:6.4vmin;
+    min-width:34px; min-height:34px;
+    max-width:44px; max-height:44px;
+    border-radius:50%;
+    border:0.4vmin solid var(--panel-border);
+    background:rgba(255,255,255,0.92);
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 0.4vmin 0 rgba(43,33,64,0.18);
+    touch-action:manipulation;
+  }
+  .dock-arrow:active{ transform:translateY(0.2vmin); }
+  .dock-arrow svg{ width:46%; height:46%; }
+  .restart-btn{
+    flex:0 0 auto;
+    font-family:"Nunito", sans-serif;
+    font-weight:800;
+    color:var(--ink);
+    background:var(--accent-glow);
+    border:0.5vmin solid var(--panel-border);
+    border-radius:50%;
+    width:8.6vmin; height:8.6vmin;
+    min-width:48px; min-height:48px;
+    max-width:64px; max-height:64px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0.5vmin 0 rgba(43,33,64,0.25);
+    touch-action:manipulation;
+  }
+  .restart-btn:active{ transform:translateY(0.3vmin); box-shadow:0 0.2vmin 0 rgba(43,33,64,0.25); }
+  .restart-btn svg{ width:44%; height:44%; }
+  .piece-card{
+    position:relative;
+    flex:0 0 auto;
+    width:10.2vmin; height:10.2vmin;
+    min-width:62px; min-height:62px;
+    max-width:84px; max-height:84px;
+    background:#FFFFFF;
+    border:0.5vmin solid var(--panel-border);
+    border-radius:1.5vmin;
+    box-shadow:0 0.6vmin 0 rgba(43,33,64,0.18);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:grab;
+    touch-action:none;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .piece-card svg{ width:76%; height:76%; }
+  .piece-card.dragging{
+    position:fixed;
+    z-index:50;
+    cursor:grabbing;
+    box-shadow:0 1.2vmin 1.6vmin rgba(43,33,64,0.35);
+    transform:scale(1.12) rotate(-3deg);
+  }
+  .piece-card.snap-back{ animation:snapback .3s ease; }
+  @keyframes snapback{ from{ transform:scale(0.85);} to{ transform:scale(1);} }
+  .piece-card.pop-away{ animation:popaway .28s ease forwards; }
+  @keyframes popaway{ to{ transform:scale(0); opacity:0;} }
+
+  /* ---------- celebration ---------- */
+  .celebrate{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    z-index:100;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .4s ease;
+  }
+  .celebrate.show{ opacity:1; pointer-events:auto; }
+  .celebrate-card{
+    font-family:"Comfortaa", sans-serif;
+    font-weight:700;
+    text-align:center;
+    background:var(--panel);
+    border:0.6vmin solid var(--panel-border);
+    border-radius:2.4vmin;
+    padding:3.2vmin 4.6vmin;
+    box-shadow:0 1.2vmin 0 rgba(43,33,64,0.25);
+    transform:translateY(10px) scale(0.9);
+    transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+    max-width:86vw;
+  }
+  .celebrate.show .celebrate-card{ transform:translateY(0) scale(1); }
+  .celebrate-card h1{ margin:0 0 1vmin; font-size:clamp(19px,3.6vmin,32px); color:var(--ink); text-wrap:balance; }
+  .celebrate-card p{ margin:0 0 2vmin; font-family:"Nunito",sans-serif; font-weight:700; font-size:clamp(12px,1.9vmin,16px); opacity:0.75; }
+  .celebrate-card button{
+    font-family:"Nunito",sans-serif;
+    font-weight:800;
+    font-size:clamp(14px,2.1vmin,18px);
+    background:var(--accent-glow);
+    border:0.5vmin solid var(--panel-border);
+    border-radius:99px;
+    padding:1.1vmin 3vmin;
+    cursor:pointer;
+    box-shadow:0 0.6vmin 0 rgba(43,33,64,0.25);
+    pointer-events:auto;
+  }
+  .celebrate-card button:active{ transform:translateY(0.4vmin); box-shadow:0 0.2vmin 0 rgba(43,33,64,0.25); }
+
+  #confetti{ position:fixed; inset:0; z-index:99; pointer-events:none; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+
+  @media (max-height:480px){
+    .house{ height:48vmin; }
+    .grass{ height:22vmin; }
+    .beach{ bottom:22vmin; }
+    .sea{ bottom:26vmin; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+
+<div class="stage" id="stage">
+
+  <div class="sun"></div>
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+
+  <div class="site">
+    <div class="sea" id="sea"></div>
+    <div class="beach"></div>
+    <div class="pier">
+      <svg viewBox="0 0 200 90">
+        <rect x="0" y="26" width="200" height="6" fill="#F5F2EC" stroke="#2B2140" stroke-width="3"/>
+        <rect x="0" y="32" width="200" height="40" fill="#E8E4DC" stroke="#2B2140" stroke-width="4"/>
+        <g stroke="#C9C4B8" stroke-width="2.5">
+          <line x1="26" y1="32" x2="26" y2="72"/>
+          <line x1="52" y1="32" x2="52" y2="72"/>
+          <line x1="78" y1="32" x2="78" y2="72"/>
+          <line x1="104" y1="32" x2="104" y2="72"/>
+          <line x1="130" y1="32" x2="130" y2="72"/>
+          <line x1="156" y1="32" x2="156" y2="72"/>
+          <line x1="182" y1="32" x2="182" y2="72"/>
+        </g>
+        <path d="M0 74 q10 6 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.55"/>
+        <rect x="34" y="8" width="11" height="20" rx="3" fill="#5A5A5A" stroke="#2B2140" stroke-width="3"/>
+        <circle cx="39.5" cy="8" r="6" fill="#8B8175" stroke="#2B2140" stroke-width="2.5"/>
+        <rect x="104" y="8" width="11" height="20" rx="3" fill="#5A5A5A" stroke="#2B2140" stroke-width="3"/>
+        <circle cx="109.5" cy="8" r="6" fill="#8B8175" stroke="#2B2140" stroke-width="2.5"/>
+      </svg>
+    </div>
+    <div class="grass" id="grass"></div>
+    <div class="house" id="house">
+
+      <!-- ===== already-built shell: not draggable, always visible ===== -->
+      <div class="body-part" id="body-roof">
+        <svg viewBox="0 0 640 150" preserveAspectRatio="none">
+          <polygon points="120,0 520,0 640,150 0,150" fill="#C1543A" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/>
+          <polygon points="120,0 520,0 640,150 0,150" fill="none" stroke="#A5432C" stroke-width="2" stroke-dasharray="0 22 22" stroke-linecap="round"/>
+          <line x1="0" y1="150" x2="640" y2="150" stroke="#2B2140" stroke-width="5"/>
+        </svg>
+      </div>
+      <div class="body-part" id="body-wall2">
+        <svg viewBox="0 0 640 170" preserveAspectRatio="none"><rect x="2" y="2" width="636" height="166" fill="#F3DFB4" stroke="#2B2140" stroke-width="5"/></svg>
+      </div>
+      <div class="body-part" id="body-wall1">
+        <svg viewBox="0 0 640 210" preserveAspectRatio="none"><rect x="2" y="2" width="636" height="206" fill="#EAD2A0" stroke="#2B2140" stroke-width="5"/><rect x="0" y="0" width="640" height="10" fill="#D8B87E"/></svg>
+      </div>
+
+      <!-- ===== interactive slots: generated from pieceDefs by script ===== -->
+
+    </div>
+  </div>
+
+  <div class="dock" id="dock">
+    <button class="restart-btn" id="restartBtn" aria-label="Начать заново" title="Начать заново">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>
+    </button>
+    <div class="dock-viewport">
+      <button class="dock-arrow left" id="dockLeft" aria-label="Прокрутить влево" title="Прокрутить влево">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <div class="dock-scroll" id="dockScroll"><!-- piece cards are generated by script from pieceDefs --></div>
+      <button class="dock-arrow right" id="dockRight" aria-label="Прокрутить вправо" title="Прокрутить вправо">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="celebrate" id="celebrate">
+    <div class="celebrate-card">
+      <h1>Ура! Отель готов! 🎉</h1>
+      <p>Теперь можно украсить пляж и двор — деревья, пруд, фонтан, лежаки, зонтик, кафе и многое другое. Ставь их сколько хочешь, а чтобы убрать — нажми на украшение ещё раз!</p>
+      <button id="celebrateClose">Играть дальше</button>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var stage = document.getElementById('stage');
+  var house = document.getElementById('house');
+  var grass = document.getElementById('grass');
+  var sea = document.getElementById('sea');
+  var dock = document.getElementById('dockScroll');
+  var dockLeft = document.getElementById('dockLeft');
+  var dockRight = document.getElementById('dockRight');
+  var celebrate = document.getElementById('celebrate');
+  var restartBtn = document.getElementById('restartBtn');
+
+  dockLeft.addEventListener('click', function(){ dock.scrollBy({ left: -220, behavior:'smooth' }); });
+  dockRight.addEventListener('click', function(){ dock.scrollBy({ left: 220, behavior:'smooth' }); });
+
+  function sq(inner){ return { icon:'<svg viewBox="0 0 100 100">'+inner+'</svg>', zone:'<svg viewBox="0 0 100 100">'+inner+'</svg>' }; }
+  function box(w,h,inner){ var vb='0 0 '+(w*10)+' '+(h*10); var s='<svg viewBox="'+vb+'">'+inner+'</svg>'; return { icon:s, zone:s }; }
+
+  /* ---------------- piece definitions (the hotel puzzle: 18 pieces) ---------------- */
+  var pieceDefs = [
+    /* ---- roof: 3 different dormer windows + dish + panel + mini-beacon ---- */
+    Object.assign({ slot:'dish', x:14, y:0.6, w:7, h:5.5 },
+      box(7,5.5,'<rect x="26" y="34" width="14" height="18" rx="3" fill="#8B8175" stroke="#2B2140" stroke-width="4"/><ellipse cx="34" cy="20" rx="30" ry="17" fill="#CFC7BB" stroke="#2B2140" stroke-width="4"/><ellipse cx="34" cy="20" rx="19" ry="10" fill="#B9B0A4" stroke="#2B2140" stroke-width="2"/><circle cx="34" cy="20" r="4.5" fill="#8B8175" stroke="#2B2140" stroke-width="2"/><line x1="34" y1="20" x2="52" y2="4" stroke="#8B8175" stroke-width="3"/>')),
+    Object.assign({ slot:'panel', x:26, y:0.6, w:12, h:5 },
+      box(12,5,'<rect x="5" y="5" width="110" height="40" rx="4" fill="#1F3B57" stroke="#2B2140" stroke-width="4"/><line x1="5" y1="20" x2="115" y2="20" stroke="#6EC6FF" stroke-width="2.5"/><line x1="5" y1="32" x2="115" y2="32" stroke="#6EC6FF" stroke-width="2.5"/><line x1="43" y1="5" x2="43" y2="45" stroke="#6EC6FF" stroke-width="2.5"/><line x1="79" y1="5" x2="79" y2="45" stroke="#6EC6FF" stroke-width="2.5"/>')),
+    Object.assign({ slot:'beacon', x:43, y:-3, w:7, h:9 },
+      box(7,9,'<rect x="18" y="34" width="34" height="52" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><rect x="18" y="34" width="34" height="14" fill="#C1543A" stroke="#2B2140" stroke-width="3"/><rect x="18" y="58" width="34" height="14" fill="#C1543A" stroke="#2B2140" stroke-width="3"/><rect x="14" y="24" width="42" height="12" rx="2" fill="#6B7280" stroke="#2B2140" stroke-width="4"/><polygon points="35,2 54,24 16,24" fill="#8B8175" stroke="#2B2140" stroke-width="4"/>')),
+    Object.assign({ slot:'dormer-left', x:12, y:6.5, w:9, h:5.5 },
+      box(9,5.5, '<polygon points="45,3 84,30 6,30" fill="#A5432C" stroke="#2B2140" stroke-width="4"/><rect x="16" y="30" width="58" height="22" rx="4" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><rect x="21" y="35" width="22" height="13" fill="#6EC6FF" stroke="#2B2140" stroke-width="2.5"/><rect x="47" y="35" width="22" height="13" fill="#6EC6FF" stroke="#2B2140" stroke-width="2.5"/>')),
+    Object.assign({ slot:'dormer-center', x:28, y:6, w:9, h:6.5 },
+      box(9,6.5, '<polygon points="45,3 84,26 6,26" fill="#A5432C" stroke="#2B2140" stroke-width="4"/><circle cx="45" cy="46" r="19" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><circle cx="45" cy="46" r="13" fill="#6EC6FF" stroke="#2B2140" stroke-width="2.5"/><line x1="45" y1="33" x2="45" y2="59" stroke="#2B2140" stroke-width="2.5"/><line x1="32" y1="46" x2="58" y2="46" stroke="#2B2140" stroke-width="2.5"/>')),
+    Object.assign({ slot:'dormer-right', x:43, y:6.5, w:9, h:5.5 },
+      box(9,5.5, '<polygon points="45,3 84,30 6,30" fill="#A5432C" stroke="#2B2140" stroke-width="4"/><rect x="16" y="30" width="58" height="22" rx="4" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><rect x="21" y="35" width="22" height="13" fill="#6EC6FF" stroke="#2B2140" stroke-width="2.5"/><rect x="47" y="35" width="22" height="13" fill="#6EC6FF" stroke="#2B2140" stroke-width="2.5"/>')),
+
+    /* ---- 2nd floor: window, lantern, window, lantern, window ---- */
+    Object.assign({ slot:'window-2a', x:4, y:19, w:9, h:9, radius:'0.9vmin' },
+      sq('<rect x="4" y="4" width="92" height="92" rx="8" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/><rect x="10" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="10" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/>')),
+    Object.assign({ slot:'lantern-1', x:18, y:20.5, w:4.5, h:9 },
+      box(4.5,9,'<rect x="16" y="34" width="13" height="55" fill="#5A5A5A" stroke="#2B2140" stroke-width="4"/><polygon points="6,6 39,6 33,32 12,32" fill="#FFE066" stroke="#2B2140" stroke-width="4"/><line x1="22.5" y1="0" x2="22.5" y2="6" stroke="#5A5A5A" stroke-width="4"/>')),
+    Object.assign({ slot:'window-2b', x:27.5, y:19, w:9, h:9, radius:'0.9vmin' },
+      sq('<rect x="4" y="4" width="92" height="92" rx="8" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/><rect x="10" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="10" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/>')),
+    Object.assign({ slot:'lantern-2', x:41.5, y:20.5, w:4.5, h:9 },
+      box(4.5,9,'<rect x="16" y="34" width="13" height="55" fill="#5A5A5A" stroke="#2B2140" stroke-width="4"/><polygon points="6,6 39,6 33,32 12,32" fill="#FFE066" stroke="#2B2140" stroke-width="4"/><line x1="22.5" y1="0" x2="22.5" y2="6" stroke="#5A5A5A" stroke-width="4"/>')),
+    Object.assign({ slot:'window-2c', x:51, y:19, w:9, h:9, radius:'0.9vmin' },
+      sq('<rect x="4" y="4" width="92" height="92" rx="8" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/><rect x="10" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="10" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="10" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><rect x="54" y="54" width="36" height="36" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/>')),
+
+    /* ---- ground floor: 2 windows + cat-flap + clock + 2 doors ---- */
+    Object.assign({ slot:'window-1a', x:3, y:33, w:9, h:9, radius:'50%' },
+      sq('<circle cx="50" cy="50" r="44" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/><circle cx="50" cy="50" r="35" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><line x1="50" y1="15" x2="50" y2="85" stroke="#2B2140" stroke-width="3"/><line x1="15" y1="50" x2="85" y2="50" stroke="#2B2140" stroke-width="3"/><circle cx="50" cy="12" r="3.5" fill="#8B8175" stroke="#2B2140" stroke-width="1.5"/><circle cx="50" cy="88" r="3.5" fill="#8B8175" stroke="#2B2140" stroke-width="1.5"/><circle cx="12" cy="50" r="3.5" fill="#8B8175" stroke="#2B2140" stroke-width="1.5"/><circle cx="88" cy="50" r="3.5" fill="#8B8175" stroke="#2B2140" stroke-width="1.5"/>')),
+    Object.assign({ slot:'cat-door', x:5.25, y:47, w:4.5, h:4.4 },
+      sq('<path d="M10 96 L10 42 A40 40 0 0 1 90 42 L90 96 Z" fill="#EADFC8" stroke="#2B2140" stroke-width="5"/><path d="M18 92 L18 44 A32 32 0 0 1 82 44 L82 92 Z" fill="#FFF8EC" stroke="#2B2140" stroke-width="2.5" opacity="0.8"/><ellipse cx="50" cy="60" rx="6" ry="8" fill="#B98F6A"/><ellipse cx="36" cy="72" rx="4.5" ry="6" fill="#B98F6A"/><ellipse cx="64" cy="72" rx="4.5" ry="6" fill="#B98F6A"/>')),
+    Object.assign({ slot:'service-door', x:15, y:39, w:8, h:13, radius:'0.8vmin 0.8vmin 0 0' },
+      box(8,13,'<rect x="6" y="6" width="68" height="118" rx="6" fill="#4C8C86" stroke="#2B2140" stroke-width="5"/><rect x="22" y="18" width="36" height="26" rx="4" fill="#CFEFEC" stroke="#2B2140" stroke-width="3"/><line x1="16" y1="66" x2="64" y2="66" stroke="#3A6B66" stroke-width="3"/><line x1="16" y1="86" x2="64" y2="86" stroke="#3A6B66" stroke-width="3"/><circle cx="60" cy="72" r="4" fill="#FFD23F" stroke="#2B2140" stroke-width="2"/>')),
+    Object.assign({ slot:'clock', x:30, y:31, w:4, h:4, radius:'50%' },
+      sq('<circle cx="50" cy="50" r="44" fill="#F3DFB4" stroke="#2B2140" stroke-width="6"/><circle cx="50" cy="50" r="35" fill="#FFF8EC" stroke="#2B2140" stroke-width="2.5"/><line x1="50" y1="19" x2="50" y2="25" stroke="#2B2140" stroke-width="3"/><line x1="50" y1="75" x2="50" y2="81" stroke="#2B2140" stroke-width="3"/><line x1="19" y1="50" x2="25" y2="50" stroke="#2B2140" stroke-width="3"/><line x1="75" y1="50" x2="81" y2="50" stroke="#2B2140" stroke-width="3"/><line x1="50" y1="50" x2="50" y2="20" stroke="#2B2140" stroke-width="4.5" stroke-linecap="round"/><line x1="50" y1="50" x2="69" y2="39" stroke="#2B2140" stroke-width="5.5" stroke-linecap="round"/><circle cx="50" cy="50" r="4.5" fill="#2B2140"/>')),
+    Object.assign({ slot:'main-door', x:25, y:35.2, w:14, h:15.8, radius:'1vmin 1vmin 0 0' },
+      box(14,15.8,'<rect x="6" y="6" width="128" height="146" rx="8" fill="#7B4B94" stroke="#2B2140" stroke-width="5"/><rect x="14" y="16" width="112" height="26" rx="4" fill="#CDE8FF" stroke="#2B2140" stroke-width="3"/><line x1="70" y1="42" x2="70" y2="152" stroke="#5F3873" stroke-width="3"/><line x1="70" y1="16" x2="70" y2="42" stroke="#5F3873" stroke-width="2"/><circle cx="58" cy="96" r="5.5" fill="#FFD23F" stroke="#2B2140" stroke-width="2"/><circle cx="82" cy="96" r="5.5" fill="#FFD23F" stroke="#2B2140" stroke-width="2"/>')),
+    Object.assign({ slot:'window-1b', x:49, y:33, w:10, h:13, radius:'2.5vmin 2.5vmin 0.6vmin 0.6vmin' },
+      box(10,13,'<path d="M6 126 L6 44 A44 44 0 0 1 94 44 L94 126 Z" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/><path d="M17 120 L17 46 A33 33 0 0 1 83 46 L83 120 Z" fill="#6EC6FF" stroke="#2B2140" stroke-width="3"/><line x1="50" y1="20" x2="50" y2="120" stroke="#2B2140" stroke-width="2.5"/><line x1="17" y1="80" x2="83" y2="80" stroke="#2B2140" stroke-width="2.5"/>')),
+
+    /* ---- entrance stairs: front view, treads in slightly different stone shades ---- */
+    Object.assign({ slot:'stairs', x:24, y:51, w:16, h:4.5, radius:'0.5vmin' },
+      box(16,4.5,'<rect x="4" y="30" width="152" height="14" rx="3" fill="#A69C8E" stroke="#2B2140" stroke-width="4"/><rect x="20" y="16" width="120" height="16" rx="3" fill="#BEB5A6" stroke="#2B2140" stroke-width="4"/><rect x="36" y="2" width="88" height="16" rx="3" fill="#D6CBB9" stroke="#2B2140" stroke-width="4"/>'))
+  ];
+  var mainSlots = pieceDefs.map(function(d){ return d.slot; });
+  var filledCount = 0;
+  var decorAdded = false;
+
+  /* ---------------- yard / seaside decoration definitions (free, reusable, removable) ---------------- */
+  var decorDefs = [
+    { id:'tree-round', w:13, h:17, svg:'<svg viewBox="0 0 60 80"><rect x="24" y="52" width="12" height="24" rx="3" fill="#8A5A32" stroke="#2B2140" stroke-width="4"/><circle cx="30" cy="34" r="22" fill="#3D8B45" stroke="#2B2140" stroke-width="4"/><circle cx="16" cy="44" r="14" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/><circle cx="44" cy="44" r="14" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'tree-pine', w:10, h:16, svg:'<svg viewBox="0 0 60 96"><rect x="25" y="80" width="10" height="14" rx="2" fill="#8A5A32" stroke="#2B2140" stroke-width="4"/><polygon points="30,4 52,42 8,42" fill="#2F7D45" stroke="#2B2140" stroke-width="4"/><polygon points="30,26 56,64 4,64" fill="#3D8B45" stroke="#2B2140" stroke-width="4"/><polygon points="30,48 60,86 0,86" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'tree-palm', w:11, h:17, svg:'<svg viewBox="0 0 90 130"><path d="M46 128 C40 90 34 60 48 30" fill="none" stroke="#8A5A32" stroke-width="9" stroke-linecap="round"/><g stroke="#2B2140" stroke-width="4"><path d="M48 30 C30 18 12 20 4 34 C22 32 36 34 48 42 Z" fill="#3D8B45"/><path d="M48 30 C34 10 16 4 4 10 C20 16 34 24 48 38 Z" fill="#4CAF50"/><path d="M48 30 C50 8 44 -6 32 -14 C36 4 40 20 48 38 Z" fill="#3D8B45"/><path d="M48 30 C66 10 84 6 94 14 C78 18 64 26 48 38 Z" fill="#4CAF50"/><path d="M48 30 C68 20 86 22 92 36 C74 32 60 34 48 42 Z" fill="#3D8B45"/></g><circle cx="42" cy="34" r="5" fill="#8A5A32" stroke="#2B2140" stroke-width="3"/><circle cx="52" cy="36" r="5" fill="#8A5A32" stroke="#2B2140" stroke-width="3"/></svg>' },
+    { id:'bush-small', w:6, h:4.5, svg:'<svg viewBox="0 0 60 45"><circle cx="20" cy="30" r="13" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/><circle cx="38" cy="26" r="15" fill="#5DBE5D" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'bush-round', w:8, h:6, svg:'<svg viewBox="0 0 80 60"><circle cx="24" cy="38" r="18" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/><circle cx="46" cy="30" r="22" fill="#5DBE5D" stroke="#2B2140" stroke-width="4"/><circle cx="62" cy="40" r="15" fill="#4CAF50" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'fern', w:7, h:4.5, svg:'<svg viewBox="0 0 70 45"><g stroke="#2B2140" stroke-width="2.5" fill="#3D8B45"><path d="M35 44 C35 30 20 26 8 30 C20 24 33 22 35 12"/><path d="M35 44 C35 30 50 26 62 30 C50 24 37 22 35 12"/><path d="M35 44 C33 28 22 20 12 16 C24 16 33 20 35 6"/><path d="M35 44 C37 28 48 20 58 16 C46 16 37 20 35 6"/></g></svg>' },
+    { id:'flower-pink', w:6, h:8, svg:'<svg viewBox="0 0 60 80"><rect x="27" y="40" width="6" height="34" fill="#3D8B45" stroke="#2B2140" stroke-width="3"/><g stroke="#2B2140" stroke-width="3"><circle cx="30" cy="24" r="9" fill="#FF6FA5"/><circle cx="18" cy="30" r="9" fill="#FF6FA5"/><circle cx="42" cy="30" r="9" fill="#FF6FA5"/><circle cx="24" cy="40" r="9" fill="#FF6FA5"/><circle cx="36" cy="40" r="9" fill="#FF6FA5"/></g><circle cx="30" cy="32" r="8" fill="#FFD23F" stroke="#2B2140" stroke-width="3"/></svg>' },
+    { id:'flower-yellow', w:6, h:8, svg:'<svg viewBox="0 0 60 80"><rect x="27" y="40" width="6" height="34" fill="#3D8B45" stroke="#2B2140" stroke-width="3"/><g stroke="#2B2140" stroke-width="3"><circle cx="30" cy="24" r="9" fill="#FFD23F"/><circle cx="18" cy="30" r="9" fill="#FFD23F"/><circle cx="42" cy="30" r="9" fill="#FFD23F"/><circle cx="24" cy="40" r="9" fill="#FFD23F"/><circle cx="36" cy="40" r="9" fill="#FFD23F"/></g><circle cx="30" cy="32" r="8" fill="#FF6FA5" stroke="#2B2140" stroke-width="3"/></svg>' },
+    { id:'mushroom', w:6, h:6, svg:'<svg viewBox="0 0 60 60"><rect x="24" y="34" width="12" height="20" rx="3" fill="#FFF3D6" stroke="#2B2140" stroke-width="4"/><path d="M8 34 a22 20 0 0 1 44 0 z" fill="#E4483A" stroke="#2B2140" stroke-width="4"/><circle cx="20" cy="24" r="3.4" fill="#FFF3D6"/><circle cx="32" cy="18" r="3" fill="#FFF3D6"/><circle cx="42" cy="26" r="3.4" fill="#FFF3D6"/></svg>' },
+    { id:'stones', w:8, h:5, svg:'<svg viewBox="0 0 80 50"><ellipse cx="22" cy="36" rx="16" ry="10" fill="#B9B0A4" stroke="#2B2140" stroke-width="4"/><ellipse cx="48" cy="30" rx="20" ry="13" fill="#CFC7BB" stroke="#2B2140" stroke-width="4"/><ellipse cx="66" cy="38" rx="12" ry="8" fill="#B9B0A4" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'fence', w:11, h:6, svg:'<svg viewBox="0 0 110 60"><line x1="4" y1="34" x2="106" y2="34" stroke="#8A5A32" stroke-width="6"/><line x1="4" y1="46" x2="106" y2="46" stroke="#8A5A32" stroke-width="6"/><g fill="#EADFC8" stroke="#2B2140" stroke-width="4"><rect x="4" y="10" width="14" height="42" rx="3"/><rect x="32" y="10" width="14" height="42" rx="3"/><rect x="60" y="10" width="14" height="42" rx="3"/><rect x="88" y="10" width="14" height="42" rx="3"/></g></svg>' },
+    { id:'lamp', w:5, h:13, svg:'<svg viewBox="0 0 50 130"><rect x="21" y="52" width="8" height="72" rx="3" fill="#5A5A5A" stroke="#2B2140" stroke-width="4"/><ellipse cx="25" cy="124" rx="14" ry="4" fill="#5A5A5A" stroke="#2B2140" stroke-width="3"/><polygon points="4,6 46,6 40,44 10,44" fill="#FFE066" stroke="#2B2140" stroke-width="4"/><polygon points="16,44 34,44 25,52" fill="#5A5A5A" stroke="#2B2140" stroke-width="3"/></svg>' },
+    { id:'pond', w:24, h:15, svg:'<svg viewBox="0 0 240 150"><path d="M24,88 C10,55 45,22 92,26 C132,10 190,18 216,52 C238,80 224,112 182,128 C140,146 82,142 48,120 C16,100 20,102 24,88 Z" fill="#4FA6D8" stroke="#2B2140" stroke-width="5"/><path d="M52,84 C44,62 68,40 100,44 C128,32 168,40 184,62 C198,82 188,102 158,112 C128,124 88,120 66,104 C48,90 50,92 52,84 Z" fill="#79CBEA" opacity="0.75"/><path d="M20,96 q8 -16 0 -30" fill="none" stroke="#3D8B45" stroke-width="6" stroke-linecap="round"/><path d="M32,102 q8 -18 0 -34" fill="none" stroke="#3D8B45" stroke-width="6" stroke-linecap="round"/><path d="M212,58 q9 -14 2 -26" fill="none" stroke="#3D8B45" stroke-width="6" stroke-linecap="round"/></svg>' },
+    { id:'fountain', w:12, h:14, svg:'<svg viewBox="0 0 100 120"><ellipse cx="50" cy="100" rx="46" ry="14" fill="#CFC7BB" stroke="#2B2140" stroke-width="5"/><ellipse cx="50" cy="96" rx="34" ry="9" fill="#8FD8F2" stroke="#2B2140" stroke-width="3"/><rect x="42" y="46" width="16" height="42" fill="#CFC7BB" stroke="#2B2140" stroke-width="5"/><ellipse cx="50" cy="46" rx="20" ry="7" fill="#CFC7BB" stroke="#2B2140" stroke-width="5"/><ellipse cx="50" cy="42" rx="10" ry="4.5" fill="#8FD8F2" stroke="#2B2140" stroke-width="3"/><path d="M50 42 L50 14 M50 20 L38 8 M50 20 L62 8" stroke="#8FD8F2" stroke-width="4" stroke-linecap="round" fill="none"/></svg>' },
+    { id:'sunbed', w:13, h:6.5, svg:'<svg viewBox="0 0 130 65"><rect x="4" y="34" width="90" height="16" rx="5" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><rect x="4" y="34" width="18" height="16" fill="#FF6FA5" stroke="#2B2140" stroke-width="2"/><rect x="40" y="34" width="18" height="16" fill="#FF6FA5" stroke="#2B2140" stroke-width="2"/><rect x="76" y="34" width="18" height="16" fill="#FF6FA5" stroke="#2B2140" stroke-width="2"/><path d="M4 34 L18 6 L48 6 L38 34 Z" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><line x1="10" y1="50" x2="4" y2="62" stroke="#8A5A32" stroke-width="4" stroke-linecap="round"/><line x1="88" y1="50" x2="94" y2="62" stroke="#8A5A32" stroke-width="4" stroke-linecap="round"/></svg>' },
+    { id:'umbrella', w:11, h:15, svg:'<svg viewBox="0 0 110 150"><line x1="55" y1="60" x2="55" y2="146" stroke="#8A5A32" stroke-width="5"/><path d="M55 10 C20 10 4 42 4 62 L106 62 C106 42 90 10 55 10 Z" fill="#FF6B4A" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/><path d="M22 62 C22 40 34 18 55 15 L55 62 Z" fill="#FFFFFF" stroke="#2B2140" stroke-width="2"/><path d="M88 62 C88 40 76 18 55 15 L55 62 Z" fill="#FFFFFF" stroke="#2B2140" stroke-width="2"/><path d="M4 62 q51 16 102 0" fill="none" stroke="#2B2140" stroke-width="4"/></svg>' },
+    { id:'table', w:10, h:8, svg:'<svg viewBox="0 0 100 80"><ellipse cx="50" cy="28" rx="30" ry="10" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><rect x="46" y="34" width="8" height="24" fill="#8A5A32" stroke="#2B2140" stroke-width="3"/><ellipse cx="50" cy="60" rx="16" ry="5" fill="#8A5A32" stroke="#2B2140" stroke-width="3"/><path d="M10 66 q6 -14 0 -26" fill="none" stroke="#4C8C86" stroke-width="6" stroke-linecap="round"/><path d="M90 66 q-6 -14 0 -26" fill="none" stroke="#4C8C86" stroke-width="6" stroke-linecap="round"/></svg>' },
+    { id:'cafe', w:17, h:14.5, svg:'<svg viewBox="0 0 160 150"><line x1="18" y1="74" x2="13" y2="28" stroke="#8A5A32" stroke-width="5" stroke-linecap="round"/><line x1="142" y1="74" x2="147" y2="28" stroke="#8A5A32" stroke-width="5" stroke-linecap="round"/><rect x="4" y="14" width="152" height="16" fill="#FF6B4A" stroke="#2B2140" stroke-width="5"/><path d="M4 30 q9.5 13 19 0 t19 0 t19 0 t19 0 t19 0 t19 0 t19 0 t19 0" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><rect x="14" y="74" width="132" height="42" fill="#F3DFB4" stroke="#2B2140" stroke-width="5"/><rect x="30" y="82" width="100" height="28" rx="3" fill="#3A3550" stroke="#2B2140" stroke-width="4"/><rect x="6" y="112" width="148" height="10" rx="2" fill="#C98A4B" stroke="#2B2140" stroke-width="4"/><rect x="40" y="104" width="9" height="10" fill="#FF6FA5" stroke="#2B2140" stroke-width="2"/><rect x="61" y="102" width="9" height="12" fill="#FFD23F" stroke="#2B2140" stroke-width="2"/><rect x="100" y="103" width="9" height="11" fill="#79CBEA" stroke="#2B2140" stroke-width="2"/></svg>' },
+    { id:'boat', w:14, h:9, area:'sea', svg:'<svg viewBox="0 0 110 70"><path d="M10 46 Q55 62 100 46 L92 55 Q55 67 18 55 Z" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/><rect x="8" y="39" width="94" height="9" fill="#4C8C86" stroke="#2B2140" stroke-width="3"/><line x1="55" y1="40" x2="55" y2="6" stroke="#8A5A32" stroke-width="4" stroke-linecap="round"/><polygon points="55,8 55,34 30,34" fill="#FFFFFF" stroke="#2B2140" stroke-width="3"/><polygon points="55,14 55,34 75,34" fill="#FF6B4A" stroke="#2B2140" stroke-width="3"/></svg>' }
+  ];
+
+  /* ---------------- audio ---------------- */
+  var actx = null;
+  function ensureAudio(){
+    if(!actx){
+      try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; }
+    } else if(actx.state === 'suspended'){
+      actx.resume();
+    }
+  }
+  function chime(freqs, dur){
+    if(!actx) return;
+    dur = dur || 0.35;
+    freqs.forEach(function(f, i){
+      var o = actx.createOscillator();
+      var g = actx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      g.gain.value = 0.0001;
+      o.connect(g); g.connect(actx.destination);
+      var t = actx.currentTime + i*0.1;
+      g.gain.exponentialRampToValueAtTime(0.22, t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      o.start(t); o.stop(t+dur+0.05);
+    });
+  }
+  function successChime(){ chime([523.25, 659.25, 783.99]); } // C E G
+  function winChime(){ chime([523.25, 659.25, 783.99, 1046.5], 0.5); }
+  function missSound(){ chime([220, 196], 0.18); }
+  function popSound(){ chime([392, 330], 0.14); }
+
+  /* ---------------- drag core ---------------- */
+  function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
+
+  function makeDraggable(card, opts){
+    card.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      ensureAudio();
+      try{ card.setPointerCapture(e.pointerId); }catch(err){}
+      var rect = card.getBoundingClientRect();
+      var offX = e.clientX - rect.left;
+      var offY = e.clientY - rect.top;
+      var w = rect.width, h = rect.height;
+      card.classList.add('dragging');
+      card.style.width = w+'px';
+      card.style.height = h+'px';
+      card.style.left = rect.left+'px';
+      card.style.top = rect.top+'px';
+      opts.onStart && opts.onStart();
+
+      function move(ev){
+        var x = ev.clientX - offX;
+        var y = ev.clientY - offY;
+        card.style.left = x+'px';
+        card.style.top = y+'px';
+        opts.onMove && opts.onMove(x + w/2, y + h/2);
+      }
+      function up(ev){
+        card.removeEventListener('pointermove', move);
+        card.removeEventListener('pointerup', up);
+        card.removeEventListener('pointercancel', up);
+        card.classList.remove('dragging');
+        var cx = (ev.clientX!=null? ev.clientX-offX : rect.left) + w/2;
+        var cy = (ev.clientY!=null? ev.clientY-offY : rect.top) + h/2;
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.height = '';
+        opts.onDrop(card, cx, cy);
+      }
+      card.addEventListener('pointermove', move);
+      card.addEventListener('pointerup', up);
+      card.addEventListener('pointercancel', up);
+    });
+  }
+
+  /* ---------------- build the hotel puzzle pieces + their zones ---------------- */
+  function addPieceCard(def){
+    var zone = document.createElement('div');
+    zone.className = 'zone';
+    zone.id = 'zone-'+def.slot;
+    zone.style.left = def.x+'vmin';
+    zone.style.top = def.y+'vmin';
+    zone.style.width = def.w+'vmin';
+    zone.style.height = def.h+'vmin';
+    var outline = document.createElement('div');
+    outline.className = 'zone-outline';
+    if(def.radius) outline.style.borderRadius = def.radius;
+    var piece = document.createElement('div');
+    piece.className = 'zone-piece';
+    piece.innerHTML = def.zone;
+    zone.appendChild(outline);
+    zone.appendChild(piece);
+    house.appendChild(zone);
+
+    var card = document.createElement('div');
+    card.className = 'piece-card';
+    card.setAttribute('data-slot', def.slot);
+    card.innerHTML = def.icon;
+    dock.appendChild(card);
+
+    makeDraggable(card, {
+      onStart: function(){
+        if(!zone.classList.contains('filled')) zone.classList.add('reachable');
+      },
+      onMove: function(cx, cy){
+        var zr = zone.getBoundingClientRect();
+        var zcx = zr.left + zr.width/2, zcy = zr.top + zr.height/2;
+        var threshold = Math.max(zr.width, zr.height) * 0.85 + 40;
+        if(!zone.classList.contains('filled') && dist(cx,cy,zcx,zcy) < threshold){
+          zone.classList.add('active');
+        } else {
+          zone.classList.remove('active');
+        }
+      },
+      onDrop: function(card, cx, cy){
+        zone.classList.remove('active');
+        zone.classList.remove('reachable');
+        var zr = zone.getBoundingClientRect();
+        var zcx = zr.left + zr.width/2, zcy = zr.top + zr.height/2;
+        var threshold = Math.max(zr.width, zr.height) * 0.85 + 40;
+        if(!zone.classList.contains('filled') && dist(cx,cy,zcx,zcy) < threshold){
+          zone.classList.add('filled');
+          card.classList.add('pop-away');
+          successChime();
+          filledCount++;
+          setTimeout(function(){ card.remove(); }, 260);
+          if(filledCount >= mainSlots.length){
+            setTimeout(onHouseComplete, 400);
+          }
+        } else {
+          card.classList.add('snap-back');
+          missSound();
+          setTimeout(function(){ card.classList.remove('snap-back'); }, 320);
+        }
+      }
+    });
+  }
+
+  function buildPieces(){
+    pieceDefs.forEach(addPieceCard);
+  }
+
+  /* ---------------- yard decoration: free placement on grass, tap to remove ---------------- */
+  function isOnGrass(cx, cy){
+    var gr = grass.getBoundingClientRect();
+    var margin = 6;
+    if(cx < gr.left + margin || cx > gr.right - margin) return false;
+    if(cy < gr.top + margin || cy > gr.bottom - margin) return false;
+    // keep the hotel itself clear so decorations don't cover it
+    var houseR = house.getBoundingClientRect();
+    var pad = 6;
+    var overHouse = cx > houseR.left - pad && cx < houseR.right + pad && cy > houseR.top - pad && cy < houseR.bottom + pad;
+    if(overHouse) return false;
+    return true;
+  }
+
+  function isInSea(cx, cy){
+    var sr = sea.getBoundingClientRect();
+    var margin = 4;
+    if(cx < sr.left + margin || cx > sr.right - margin) return false;
+    if(cy < sr.top + margin || cy > sr.bottom - margin) return false;
+    // keep the hotel itself clear so the boat doesn't land behind/over it
+    var houseR = house.getBoundingClientRect();
+    var pad = 6;
+    var overHouse = cx > houseR.left - pad && cx < houseR.right + pad && cy > houseR.top - pad && cy < houseR.bottom + pad;
+    if(overHouse) return false;
+    return true;
+  }
+
+  function removePlaced(el){
+    if(el.classList.contains('removing')) return;
+    el.classList.add('removing');
+    popSound();
+    setTimeout(function(){ el.remove(); }, 220);
+  }
+
+  function addDecorCard(def){
+    var card = document.createElement('div');
+    card.className = 'piece-card';
+    card.innerHTML = def.svg;
+    dock.appendChild(card);
+    makeDraggable(card, {
+      onMove: function(){},
+      onDrop: function(card, cx, cy){
+        var valid = (def.area === 'sea') ? isInSea(cx, cy) : isOnGrass(cx, cy);
+        if(valid){
+          var placed = document.createElement('div');
+          placed.className = 'decor-piece';
+          placed.innerHTML = def.svg;
+          var vmin = Math.min(window.innerWidth, window.innerHeight) / 100;
+          placed.style.width = def.w + 'vmin';
+          placed.style.height = def.h + 'vmin';
+          placed.style.left = (cx - stage.getBoundingClientRect().left - (def.w*vmin)/2) + 'px';
+          placed.style.top = (cy - stage.getBoundingClientRect().top - (def.h*vmin)/2) + 'px';
+          placed.style.transform = 'scale(0.3)';
+          placed.style.opacity = '0';
+          placed.style.transition = 'transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s ease';
+          stage.appendChild(placed);
+          requestAnimationFrame(function(){
+            placed.style.transform = 'scale(1)';
+            placed.style.opacity = '1';
+          });
+          placed.addEventListener('click', function(){ removePlaced(placed); });
+          successChime();
+          // the card stays in the tray so the same decoration can be placed again
+        } else {
+          card.classList.add('snap-back');
+          missSound();
+          setTimeout(function(){ card.classList.remove('snap-back'); }, 320);
+        }
+      }
+    });
+  }
+
+  /* ---------------- celebration ---------------- */
+  function onHouseComplete(){
+    winChime();
+    celebrate.classList.add('show');
+    launchConfetti();
+    if(!decorAdded){
+      decorAdded = true;
+      decorDefs.forEach(addDecorCard);
+    }
+  }
+  document.getElementById('celebrateClose').addEventListener('click', function(){
+    celebrate.classList.remove('show');
+  });
+
+  /* ---------------- confetti ---------------- */
+  var canvas = document.getElementById('confetti');
+  var ctx = canvas.getContext('2d');
+  var confettiParticles = [];
+  var confettiRAF = null;
+  var confettiColors = ['#FF6B4A','#F3DFB4','#7B4B94','#6EC6FF','#4CAF50','#FFD23F'];
+
+  function resizeCanvas(){
+    canvas.width = window.innerWidth * devicePixelRatio;
+    canvas.height = window.innerHeight * devicePixelRatio;
+    canvas.style.width = window.innerWidth+'px';
+    canvas.style.height = window.innerHeight+'px';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function launchConfetti(){
+    confettiParticles = [];
+    var n = 80;
+    for(var i=0;i<n;i++){
+      confettiParticles.push({
+        x: Math.random()*window.innerWidth,
+        y: -20 - Math.random()*200,
+        vy: 2 + Math.random()*3,
+        vx: -1.5 + Math.random()*3,
+        size: 6 + Math.random()*8,
+        rot: Math.random()*Math.PI*2,
+        vr: -0.15 + Math.random()*0.3,
+        color: confettiColors[i % confettiColors.length]
+      });
+    }
+    var start = performance.now();
+    if(confettiRAF) cancelAnimationFrame(confettiRAF);
+    function frame(now){
+      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+      ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+      var elapsed = now - start;
+      confettiParticles.forEach(function(p){
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+        ctx.restore();
+      });
+      if(elapsed < 3200){
+        confettiRAF = requestAnimationFrame(frame);
+      } else {
+        ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+      }
+    }
+    confettiRAF = requestAnimationFrame(frame);
+  }
+
+  /* ---------------- restart ---------------- */
+  function restart(){
+    ensureAudio();
+    celebrate.classList.remove('show');
+    if(confettiRAF){ cancelAnimationFrame(confettiRAF); ctx.clearRect(0,0,window.innerWidth,window.innerHeight); }
+    document.querySelectorAll('.zone').forEach(function(z){ z.remove(); });
+    document.querySelectorAll('.decor-piece').forEach(function(el){ el.remove(); });
+    document.querySelectorAll('.dock .piece-card').forEach(function(el){ el.remove(); });
+    filledCount = 0;
+    decorAdded = false;
+    buildPieces();
+  }
+  restartBtn.addEventListener('click', restart);
+
+  /* ---------------- go ---------------- */
+  buildPieces();
+
+})();
+</script>
