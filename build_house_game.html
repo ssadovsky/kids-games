@@ -84,7 +84,7 @@ Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then 
     height:100dvh;
     display:flex;
     flex-direction:column;
-    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 62%);
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 44%);
   }
 
   /* ---------- sky scenery ---------- */
@@ -126,7 +126,7 @@ Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then 
 
   /* ---------- straight horizon: sea + beach + grass ---------- */
   .sea{
-    position:absolute; left:0; right:0; bottom:32vmin; height:9vmin;
+    position:absolute; left:0; right:0; bottom:40vmin; height:13vmin;
     background:linear-gradient(180deg, var(--sea-top), var(--sea-bottom));
     border-top:0.5vmin solid var(--panel-border);
     overflow:hidden;
@@ -134,19 +134,19 @@ Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then 
   }
   .sea .wave{ position:absolute; left:-10%; width:120%; height:0.5vmin; background:rgba(255,255,255,0.35); border-radius:99px; }
   .beach{
-    position:absolute; left:0; right:0; bottom:28vmin; height:4vmin;
+    position:absolute; left:0; right:0; bottom:36vmin; height:4vmin;
     background:linear-gradient(180deg, var(--sand), var(--sand-dark));
     border-top:0.4vmin solid var(--panel-border);
     z-index:0;
   }
   .pier{
-    position:absolute; right:-6vmin; bottom:29vmin; width:22vmin; height:7vmin;
+    position:absolute; right:-6vmin; bottom:37vmin; width:22vmin; height:7vmin;
     z-index:1;
     pointer-events:none;
   }
   .pier svg{ width:100%; height:100%; display:block; overflow:visible; }
   .grass{
-    position:absolute; left:0; right:0; bottom:0; height:28vmin;
+    position:absolute; left:0; right:0; bottom:0; height:36vmin;
     background:linear-gradient(180deg, var(--grass-1), var(--grass-2));
     border-top:0.6vmin solid var(--panel-border);
     z-index:0;
@@ -194,12 +194,12 @@ Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then 
   .zone.filled .zone-outline{ opacity:0; pointer-events:none; }
   .zone.reachable .zone-outline{
     opacity:1;
-    background:rgba(255,224,102,0.14);
-    border-color:rgba(255,224,102,0.9);
+    background:rgba(110,198,255,0.14);
+    border-color:rgba(110,198,255,0.9);
   }
   .zone.active .zone-outline{
-    background:rgba(255,224,102,0.4);
-    box-shadow:0 0 0 0.5vmin rgba(255,224,102,0.55);
+    background:rgba(110,198,255,0.4);
+    box-shadow:0 0 0 0.5vmin rgba(110,198,255,0.55);
   }
   .zone-piece{
     position:absolute;
@@ -369,9 +369,9 @@ Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then 
 
   @media (max-height:480px){
     .house{ height:48vmin; }
-    .grass{ height:22vmin; }
-    .beach{ bottom:22vmin; }
-    .sea{ bottom:26vmin; }
+    .grass{ height:28vmin; }
+    .beach{ bottom:28vmin; }
+    .sea{ bottom:32vmin; height:9vmin; }
   }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
