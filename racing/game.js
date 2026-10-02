@@ -241,13 +241,15 @@
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
 
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ('ontouchstart' in window);
+
     const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 650);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.35) : Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
@@ -259,8 +261,9 @@
     const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.4);
     sunLight.position.set(130, 180, 100);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
+    const shadowRes = isMobile ? 512 : 1024;
+    sunLight.shadow.mapSize.width = shadowRes;
+    sunLight.shadow.mapSize.height = shadowRes;
     sunLight.shadow.camera.near = 10;
     sunLight.shadow.camera.far = 420;
     const shadowDist = 110;
@@ -736,8 +739,8 @@
                     basePineTemplate = gltf.scene;
                     basePineTemplate.traverse((child) => {
                         if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
+                            child.castShadow = false;
+                            child.receiveShadow = false;
                         }
                     });
                     if (currentDecorationsGroup) {
@@ -785,8 +788,8 @@
             branch.rotateX(Math.PI / 2.3);
             branch.position.y = y;
             branch.rotation.y = t * 2.399;
-            branch.castShadow = true;
-            branch.receiveShadow = true;
+            branch.castShadow = false;
+            branch.receiveShadow = false;
             pine.add(branch);
         }
         return pine;
@@ -836,7 +839,7 @@
                 // Фонарный столб
                 const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 8, 8), lampMat);
                 pole.position.copy(pos).setY(4);
-                pole.castShadow = true;
+                pole.castShadow = false;
                 targetGroup.add(pole);
 
                 const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), bulbMat);
@@ -2260,11 +2263,24 @@
         // Кнопка полноэкранного режима
         document.getElementById('btn-fullscreen').addEventListener('click', () => {
             tryLockLandscape();
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
+            const doc = document;
+            const docEl = doc.documentElement;
+            const isFull = doc.fullscreenElement || doc.webkitFullscreenElement;
+
+            if (!isFull) {
+                const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+                if (req) {
+                    req.call(docEl, { navigationUI: 'hide' }).catch(() => {
+                        req.call(docEl).catch(() => {});
+                    });
+                }
             } else {
-                document.exitFullscreen().catch(() => {});
+                const exit = doc.exitFullscreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+                if (exit) exit.call(doc).catch(() => {});
             }
+            setTimeout(onWindowResize, 80);
+            setTimeout(onWindowResize, 250);
+            setTimeout(onWindowResize, 500);
         });
 
         // Кнопка старта
@@ -2301,10 +2317,29 @@
         startGame();
     }
 
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
+    function onWindowResize() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        camera.aspect = w / h;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(w, h);
+    }
+
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('orientationchange', () => {
+        onWindowResize();
+        setTimeout(onWindowResize, 100);
+        setTimeout(onWindowResize, 300);
+    });
+    document.addEventListener('fullscreenchange', () => {
+        onWindowResize();
+        setTimeout(onWindowResize, 100);
+        setTimeout(onWindowResize, 300);
+    });
+    document.addEventListener('webkitfullscreenchange', () => {
+        onWindowResize();
+        setTimeout(onWindowResize, 100);
+        setTimeout(onWindowResize, 300);
     });
 
     cameraCurrentPos.copy(player.pos).add(new THREE.Vector3(0, 10, -15));

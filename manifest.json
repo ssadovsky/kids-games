@@ -5,10 +5,10 @@
   "start_url": "/kids-games/index.html",
   "scope": "/kids-games/",
   "id": "/kids-games/",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "any",
-  "background_color": "#B6E6FF",
-  "theme_color": "#8FD3F4",
+  "background_color": "#080d1a",
+  "theme_color": "#080d1a",
   "lang": "ru",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
