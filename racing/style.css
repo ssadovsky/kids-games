@@ -11,7 +11,7 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #0b0f19;
+    background-color: #080d1a;
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
     touch-action: none;
 }
@@ -39,14 +39,14 @@ html, body {
 }
 
 .hud-panel {
-    background: rgba(13, 20, 36, 0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(0, 220, 255, 0.25);
-    border-radius: 12px;
-    padding: 8px 14px;
+    background: rgba(10, 16, 32, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 14px;
+    padding: 8px 16px;
     color: #fff;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .hud-row {
@@ -54,9 +54,9 @@ html, body {
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.5px;
-    color: #a0aec0;
+    color: #94a3b8;
 }
 
 .hud-val {
@@ -67,22 +67,23 @@ html, body {
 }
 
 #pos-panel .pos-big {
-    font-size: 30px;
+    font-size: 32px;
     font-weight: 900;
     color: #ffde59;
     line-height: 1;
     display: inline-block;
+    text-shadow: 0 0 10px rgba(255, 222, 89, 0.5);
 }
 
 #pos-panel .pos-total {
     font-size: 14px;
-    color: #a0aec0;
+    color: #94a3b8;
 }
 
 /* Спидометр по центру снизу */
 #speedometer-panel {
     position: absolute;
-    bottom: calc(env(safe-area-inset-bottom, 12px) + 16px);
+    bottom: calc(env(safe-area-inset-bottom, 12px) + 14px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -90,33 +91,34 @@ html, body {
     flex-direction: column;
     align-items: center;
     pointer-events: none;
-    background: rgba(13, 20, 36, 0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(0, 240, 255, 0.3);
-    border-radius: 16px;
+    background: rgba(10, 16, 32, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 18px;
     padding: 8px 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 #speed-number {
-    font-size: 40px;
+    font-size: 42px;
     font-weight: 900;
     font-family: 'Courier New', monospace;
     color: #ffffff;
-    text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+    text-shadow: 0 0 14px rgba(0, 240, 255, 0.7);
     line-height: 1;
 }
 
 #speed-unit {
     font-size: 11px;
     letter-spacing: 2px;
-    color: #718096;
+    color: #64748b;
     margin-top: 2px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 #nitro-bar-container {
-    width: 140px;
+    width: 130px;
     height: 7px;
     background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
@@ -128,7 +130,7 @@ html, body {
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, #ff9900, #00f0ff);
-    box-shadow: 0 0 8px #00f0ff;
+    box-shadow: 0 0 10px #00f0ff;
     transition: width 0.08s linear;
 }
 
@@ -137,11 +139,11 @@ html, body {
     position: absolute;
     top: calc(env(safe-area-inset-top, 12px) + 72px);
     right: env(safe-area-inset-right, 16px);
-    width: 115px;
-    height: 115px;
-    background: rgba(13, 20, 36, 0.8);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(0, 240, 255, 0.25);
+    width: 110px;
+    height: 110px;
+    background: rgba(10, 16, 32, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 240, 255, 0.3);
     border-radius: 50%;
     overflow: hidden;
     z-index: 10;
@@ -154,78 +156,144 @@ html, body {
     height: 100%;
 }
 
-/* Сенсорные контроллеры для Galaxy S10 */
-.touch-zone {
+/* --- ВИРТУАЛЬНЫЙ АНАЛОГОВЫЙ ДЖОЙСТИК --- */
+#joystick-zone {
     position: absolute;
     bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
-    z-index: 20;
-    display: flex;
-    gap: 14px;
-    pointer-events: auto;
-}
-
-#touch-left-zone {
     left: calc(env(safe-area-inset-left, 16px) + 12px);
-}
-
-#touch-right-zone {
-    right: calc(env(safe-area-inset-right, 16px) + 12px);
-}
-
-.touch-btn {
-    width: 74px;
-    height: 74px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
-    border: 2px solid rgba(255, 255, 255, 0.35);
+    width: 160px;
+    height: 160px;
+    z-index: 25;
+    pointer-events: auto;
+    touch-action: none;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #ffffff;
-    font-size: 24px;
+}
+
+#joystick-base {
+    position: relative;
+    width: 136px;
+    height: 136px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, rgba(13, 22, 44, 0.75) 70%);
+    border: 2px solid rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.25), inset 0 0 15px rgba(0, 240, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.joy-hint {
+    position: absolute;
+    font-size: 11px;
     font-weight: 800;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-    touch-action: none;
-    transition: transform 0.08s ease, background 0.08s ease, border-color 0.08s ease;
-}
-
-.touch-btn:active, .touch-btn.active {
-    transform: scale(0.92);
-    background: rgba(0, 240, 255, 0.45);
-    border-color: #00f0ff;
-    box-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
-}
-
-.touch-btn.nitro-btn {
-    width: 62px;
-    height: 62px;
-    border-color: rgba(255, 150, 0, 0.6);
-    background: rgba(255, 100, 0, 0.22);
-    font-size: 22px;
-    align-self: center;
-}
-
-.touch-btn.nitro-btn:active, .touch-btn.nitro-btn.active {
-    background: rgba(255, 150, 0, 0.55);
-    border-color: #ff9900;
-    box-shadow: 0 0 22px rgba(255, 150, 0, 0.85);
-}
-
-.touch-btn.brake-btn {
-    border-color: rgba(255, 60, 60, 0.6);
-    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
     letter-spacing: 0.5px;
+    pointer-events: none;
+}
+.joy-hint-up { top: 6px; }
+.joy-hint-down { bottom: 6px; }
+.joy-hint-left { left: 8px; }
+.joy-hint-right { right: 8px; }
+
+#joystick-knob {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #5eead4, #0284c7);
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 240, 255, 0.8);
+    position: absolute;
+    top: calc(50% - 29px);
+    left: calc(50% - 29px);
+    transform: translate(0, 0);
+    pointer-events: none;
+    transition: transform 0.05s ease-out;
 }
 
-.touch-btn.brake-btn:active, .touch-btn.brake-btn.active {
-    background: rgba(255, 50, 50, 0.5);
-    border-color: #ff3333;
-    box-shadow: 0 0 20px rgba(255, 50, 50, 0.8);
+#joystick-knob::after {
+    content: "🕹️";
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: 20px;
 }
 
-/* Кнопки быстрого действия (Камера, Звук, Экран) */
+/* --- ПРАВАЯ ЗОНА УПРАВЛЕНИЯ: НИТРО И ТОРМОЗ --- */
+#right-actions-zone {
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom, 12px) + 16px);
+    right: calc(env(safe-area-inset-right, 16px) + 16px);
+    z-index: 25;
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    pointer-events: auto;
+}
+
+.action-btn {
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.action-btn:active, .action-btn.active {
+    transform: scale(0.92);
+}
+
+#btn-nitro {
+    width: 82px;
+    height: 82px;
+    background: radial-gradient(circle at 35% 30%, #ffbe3b, #ea580c);
+    border: 3px solid #ffedd5;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 25px rgba(255, 140, 0, 0.7);
+    font-size: 28px;
+}
+
+#btn-nitro .btn-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-top: -2px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+#btn-nitro:active, #btn-nitro.active {
+    box-shadow: 0 0 35px rgba(255, 150, 0, 1.0);
+}
+
+#btn-brake {
+    width: 66px;
+    height: 66px;
+    background: radial-gradient(circle at 35% 30%, #f87171, #b91c1c);
+    border: 2px solid #fee2e2;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 15px rgba(239, 68, 68, 0.5);
+    font-size: 18px;
+}
+
+#btn-brake .btn-label {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+#btn-brake:active, #btn-brake.active {
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
+}
+
+/* Кнопки быстрого действия (Меню, Камера, Звук, Экран) */
 #quick-actions {
     position: absolute;
     top: calc(env(safe-area-inset-top, 12px) + 8px);
@@ -237,22 +305,24 @@ html, body {
 }
 
 .small-btn {
-    background: rgba(13, 20, 36, 0.8);
+    background: rgba(10, 16, 32, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.25);
-    color: #eee;
-    padding: 6px 13px;
+    color: #f1f5f9;
+    padding: 7px 14px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     backdrop-filter: blur(6px);
     pointer-events: auto;
     transition: all 0.15s ease;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 .small-btn:active {
     background: #00f0ff;
-    color: #0b0f19;
+    color: #080d1a;
+    border-color: #00f0ff;
 }
 
 /* Оверлей старта и финиша */
@@ -262,7 +332,7 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(8, 12, 22, 0.88);
+    background: rgba(8, 13, 26, 0.9);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     z-index: 50;
@@ -272,7 +342,8 @@ html, body {
     align-items: center;
     color: #fff;
     text-align: center;
-    padding: 20px;
+    padding: 16px;
+    overflow-y: auto;
 }
 
 #overlay-screen.hidden {
@@ -280,32 +351,150 @@ html, body {
 }
 
 #overlay-screen h1 {
-    font-size: 38px;
+    font-size: 34px;
     font-weight: 900;
     letter-spacing: 2px;
     color: #00f0ff;
-    text-shadow: 0 0 22px rgba(0, 240, 255, 0.7);
-    margin-bottom: 12px;
+    text-shadow: 0 0 22px rgba(0, 240, 255, 0.8);
+    margin-bottom: 8px;
 }
 
 #overlay-screen p {
-    font-size: 15px;
+    font-size: 14px;
     color: #cbd5e1;
     max-width: 480px;
-    line-height: 1.5;
-    margin-bottom: 24px;
+    line-height: 1.4;
+    margin-bottom: 16px;
+}
+
+/* Выбор трассы */
+.track-select-container {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.track-select-title {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: #94a3b8;
+    font-weight: 800;
+}
+
+.track-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.track-btn {
+    background: rgba(15, 23, 42, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 10px 18px;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    min-width: 170px;
+}
+
+.track-btn.active {
+    border-color: #00f0ff;
+    background: rgba(0, 240, 255, 0.15);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+    transform: scale(1.03);
+}
+
+.track-badge {
+    font-size: 10px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 8px;
+    letter-spacing: 0.5px;
+}
+.track-badge.easy {
+    background: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    border: 1px solid #10b981;
+}
+.track-badge.hard {
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    border: 1px solid #ef4444;
+}
+
+.track-name {
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.track-desc {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* Выбор цвета машинки игрока */
+.color-select-container {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-select-title {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: #94a3b8;
+    font-weight: 800;
+}
+
+.color-buttons {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    align-items: center;
+}
+
+.color-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--c);
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.color-btn:hover {
+    transform: scale(1.15);
+}
+
+.color-btn.active {
+    border-color: #ffffff;
+    transform: scale(1.28);
+    box-shadow: 0 0 16px var(--c), 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .start-btn {
     background: linear-gradient(135deg, #00f0ff, #0077ff);
     color: #060913;
     font-size: 20px;
-    font-weight: 800;
-    padding: 15px 46px;
+    font-weight: 900;
+    padding: 14px 48px;
     border: none;
     border-radius: 30px;
     cursor: pointer;
-    box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.7);
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
@@ -315,12 +504,12 @@ html, body {
 }
 
 .controls-hint {
-    margin-top: 24px;
+    margin-top: 18px;
     font-size: 12px;
-    color: #64748b;
+    color: #94a3b8;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     align-items: center;
 }
 
@@ -330,7 +519,7 @@ html, body {
     top: 35%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 36px;
+    font-size: 38px;
     font-weight: 900;
     color: #ffde59;
     text-shadow: 0 0 20px rgba(255, 222, 89, 0.8), 0 4px 10px rgba(0,0,0,0.8);
@@ -346,30 +535,133 @@ html, body {
     transform: translate(-50%, -50%) scale(1.08);
 }
 
-/* Адаптивность для портретной ориентации (если телефон держат вертикально) */
+/* Окно паузы */
+#pause-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(8, 13, 26, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 55;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+}
+
+#pause-screen.hidden {
+    display: none;
+}
+
+#pause-screen h2 {
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #ffde59;
+    text-shadow: 0 0 20px rgba(255, 222, 89, 0.7);
+    margin-bottom: 24px;
+}
+
+.pause-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 260px;
+    max-width: 90%;
+}
+
+.menu-action-btn {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #f8fafc;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 14px 24px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.menu-action-btn:active {
+    background: #00f0ff;
+    color: #080d1a;
+    transform: scale(0.96);
+}
+
+/* Подсказка повернуть экран в вертикальном режиме */
+#portrait-rotate-notice {
+    display: none;
+}
+
 @media (orientation: portrait) {
+    #portrait-rotate-notice {
+        display: flex;
+        position: absolute;
+        top: calc(env(safe-area-inset-top, 12px) + 55px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(13, 20, 36, 0.9);
+        border: 1px solid rgba(0, 240, 255, 0.4);
+        border-radius: 20px;
+        padding: 6px 16px;
+        color: #ffde59;
+        font-size: 12px;
+        font-weight: 800;
+        z-index: 40;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        pointer-events: none;
+        animation: pulseRotate 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseRotate {
+        0%, 100% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.05); }
+    }
+
     #minimap-container {
-        top: calc(env(safe-area-inset-top, 12px) + 85px);
-        width: 90px;
-        height: 90px;
+        top: calc(env(safe-area-inset-top, 12px) + 95px);
+        width: 85px;
+        height: 85px;
     }
 
     #speedometer-panel {
-        bottom: calc(env(safe-area-inset-bottom, 12px) + 95px);
+        bottom: calc(env(safe-area-inset-bottom, 12px) + 160px);
     }
 
-    .touch-zone {
+    #joystick-zone {
         bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
+        left: 10px;
+        width: 140px;
+        height: 140px;
     }
 
-    .touch-btn {
-        width: 64px;
-        height: 64px;
-        font-size: 20px;
+    #joystick-base {
+        width: 120px;
+        height: 120px;
     }
 
-    .touch-btn.nitro-btn {
-        width: 54px;
-        height: 54px;
+    #right-actions-zone {
+        bottom: calc(env(safe-area-inset-bottom, 12px) + 14px);
+        right: 10px;
+        gap: 12px;
+    }
+
+    #btn-nitro {
+        width: 70px;
+        height: 70px;
+        font-size: 24px;
+    }
+
+    #btn-brake {
+        width: 56px;
+        height: 56px;
     }
 }

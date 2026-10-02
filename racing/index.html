@@ -5,12 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0b0f19">
+    <meta name="theme-color" content="#080d1a">
     <title>3D Гонки</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="canvas-container"></div>
+
+    <!-- Подсказка переворота в альбомную ориентацию -->
+    <div id="portrait-rotate-notice">
+        <span>🔄</span> Поверни экран горизонтально!
+    </div>
 
     <!-- Верхний HUD -->
     <div id="hud-top">
@@ -25,9 +30,11 @@
         </div>
     </div>
 
-    <!-- Кнопки быстрого действия (Меню, Камера, Звук, Экран) -->
+    <!-- Кнопки быстрого действия (Назад к играм, Меню трасс, Пауза, Камера, Звук, Экран) -->
     <div id="quick-actions">
-        <a href="../index.html" class="small-btn" id="btn-back" style="text-decoration: none; display: inline-flex; align-items: center;" title="В меню">🏠 Меню</a>
+        <a href="../index.html" class="small-btn" id="btn-exit-games" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; font-size: 15px;" title="К другим играм">⬅️</a>
+        <button class="small-btn" id="btn-track-menu" title="Выбор трассы">🏁 Меню</button>
+        <button class="small-btn" id="btn-pause" title="Пауза">⏸️ Пауза</button>
         <button class="small-btn" id="btn-cam" title="Переключить камеру">🎥 Камера</button>
         <button class="small-btn" id="btn-sound" title="Вкл/Выкл звук">🔊 Звук</button>
         <button class="small-btn" id="btn-fullscreen" title="На весь экран">⛶ Экран</button>
@@ -35,28 +42,40 @@
 
     <!-- Мини-карта -->
     <div id="minimap-container">
-        <canvas id="minimap-canvas" width="120" height="120"></canvas>
+        <canvas id="minimap-canvas" width="110" height="110"></canvas>
     </div>
 
     <!-- Спидометр -->
     <div id="speedometer-panel">
         <div id="speed-number">0</div>
         <div id="speed-unit">КМ/Ч</div>
+        <div id="nitro-label" style="font-size: 8px; color: #38bdf8; letter-spacing: 1px; font-weight: 700; margin-top: 3px;">⚡ НИТРО</div>
         <div id="nitro-bar-container">
             <div id="nitro-bar"></div>
         </div>
     </div>
 
-    <!-- Сенсорные кнопки управления (для Galaxy S10 и тачскринов) -->
-    <div class="touch-zone" id="touch-left-zone">
-        <div class="touch-btn" id="btn-left" data-key="left">◀</div>
-        <div class="touch-btn" id="btn-right" data-key="right">▶</div>
+    <!-- ВИРТУАЛЬНЫЙ АНАЛОГОВЫЙ ДЖОЙСТИК -->
+    <div id="joystick-zone">
+        <div id="joystick-base">
+            <span class="joy-hint joy-hint-up">ГАЗ ▲</span>
+            <span class="joy-hint joy-hint-down">▼ НАЗАД</span>
+            <span class="joy-hint joy-hint-left">◄</span>
+            <span class="joy-hint joy-hint-right">►</span>
+            <div id="joystick-knob"></div>
+        </div>
     </div>
 
-    <div class="touch-zone" id="touch-right-zone">
-        <div class="touch-btn brake-btn" id="btn-brake" data-key="brake">ТОРМОЗ</div>
-        <div class="touch-btn nitro-btn" id="btn-nitro" data-key="nitro">⚡</div>
-        <div class="touch-btn" id="btn-gas" data-key="gas">ГАЗ</div>
+    <!-- ПРАВЫЕ КНОПКИ ДЕЙСТВИЯ (ТУРБО И ТОРМОЗ) -->
+    <div id="right-actions-zone">
+        <div class="action-btn" id="btn-brake">
+            🛑
+            <span class="btn-label">СТОП</span>
+        </div>
+        <div class="action-btn" id="btn-nitro">
+            ⚡
+            <span class="btn-label">ТУРБО</span>
+        </div>
     </div>
 
     <!-- Центральный баннер оповещений -->
@@ -65,17 +84,64 @@
     <!-- Стартовое меню / Пауза -->
     <div id="overlay-screen">
         <h1>ТУРБО ГОНКИ 3D</h1>
-        <p>Камера от 3-го лица с повышенного ракурса. Оптимизировано для Samsung Galaxy S10 и автономной игры без интернета.</p>
+        <p>Аналоговый джойстик (тяни вперед для разгона, в стороны для руления). Машина не вылетает за бортики!</p>
+
+        <!-- Выбор трассы -->
+        <div class="track-select-container">
+            <div class="track-select-title">ВЫБЕРИ ТРАССУ:</div>
+            <div class="track-buttons">
+                <button class="track-btn active" id="btn-track-1" data-track="0">
+                    <span class="track-badge easy">🟢 ЛЕГКАЯ</span>
+                    <span class="track-name">Овал с бортиками</span>
+                    <span class="track-desc">Широкая, без вылетов, для детей</span>
+                </button>
+                <button class="track-btn" id="btn-track-2" data-track="1">
+                    <span class="track-badge hard">🔴 СЛОЖНАЯ</span>
+                    <span class="track-name">Крутые виражи</span>
+                    <span class="track-desc">Шиканы, заносы, виражи</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Выбор цвета машинки игрока -->
+        <div class="color-select-container">
+            <div class="color-select-title">ЦВЕТ ТВОЕЙ МАШИНКИ:</div>
+            <div class="color-buttons">
+                <button class="color-btn active" data-hue="0" data-hex="#00d2ff" style="--c: #00d2ff;" title="Синий"></button>
+                <button class="color-btn" data-hue="2.27" data-hex="#ff2a55" style="--c: #ff2a55;" title="Красный"></button>
+                <button class="color-btn" data-hue="3.55" data-hex="#ffbb00" style="--c: #ffbb00;" title="Золотой"></button>
+                <button class="color-btn" data-hue="4.54" data-hex="#10b981" style="--c: #10b981;" title="Зелёный"></button>
+                <button class="color-btn" data-hue="5.40" data-hex="#a855f7" style="--c: #a855f7;" title="Фиолетовый"></button>
+                <button class="color-btn" data-hue="2.80" data-hex="#f97316" style="--c: #f97316;" title="Оранжевый"></button>
+            </div>
+        </div>
+
         <button class="start-btn" id="btn-start">ПОГНАЛИ!</button>
         
         <div class="controls-hint">
-            <span>📱 Сенсорные кнопки на экране</span>
-            <span>💻 ПК: W/A/S/D или Стрелки, Shift/Space - Нитро</span>
+            <span>🕹️ Экранный джойстик: тяни стик пальцем на смартфоне!</span>
+            <span>🖱️ Мышь на ПК как в WoW: зажми ЛКМ + ПКМ — газ вперёд, веди мышь с зажатой ПКМ — рулишь!</span>
+            <span>⌨️ Клавиатура на ПК: W/A/S/D или Стрелки, Пробел - Турбо</span>
         </div>
     </div>
 
-    <!-- Общая библиотека Three.js из папки ../lib/ -->
+    <!-- Модальное окно паузы -->
+    <div id="pause-screen" class="hidden">
+        <h2>⏸️ ИГРА НА ПАУЗЕ</h2>
+        <div class="pause-buttons">
+            <button class="start-btn" id="btn-resume">▶️ ПРОДОЛЖИТЬ</button>
+            <button class="menu-action-btn" id="btn-restart-pause">🔄 НАЧАТЬ ЗАНОВО</button>
+            <button class="menu-action-btn" id="btn-track-menu-pause">🏁 ВЫБОР ТРАССЫ</button>
+            <a href="../index.html" class="menu-action-btn" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">⬅️ К ДРУГИМ ИГРАМ</a>
+        </div>
+    </div>
+
+    <!-- Библиотеки Three.js и загрузчик 3D-моделей GLTF -->
     <script src="../lib/three.min.js"></script>
+    <script src="../lib/GLTFLoader.js"></script>
+    <script src="car_model.js"></script>
+    <script src="grass_texture.js"></script>
+    <script src="pine_model.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
