@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0b0f19">
+    <title>3D Гонки</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- Верхний HUD -->
+    <div id="hud-top">
+        <div class="hud-panel" id="pos-panel">
+            <span class="pos-big" id="ui-pos">1</span><span class="pos-total">/4</span>
+            <div class="hud-row" style="margin-top: 4px;">КРУГ <span class="hud-val" id="ui-lap">1/3</span></div>
+        </div>
+
+        <div class="hud-panel" id="time-panel">
+            <div class="hud-row">ВРЕМЯ: <span class="hud-val" id="ui-time">00:00.0</span></div>
+            <div class="hud-row">ЛУЧШИЙ: <span class="hud-val" id="ui-best">--:--.-</span></div>
+        </div>
+    </div>
+
+    <!-- Кнопки быстрого действия (Меню, Камера, Звук, Экран) -->
+    <div id="quick-actions">
+        <a href="../index.html" class="small-btn" id="btn-back" style="text-decoration: none; display: inline-flex; align-items: center;" title="В меню">🏠 Меню</a>
+        <button class="small-btn" id="btn-cam" title="Переключить камеру">🎥 Камера</button>
+        <button class="small-btn" id="btn-sound" title="Вкл/Выкл звук">🔊 Звук</button>
+        <button class="small-btn" id="btn-fullscreen" title="На весь экран">⛶ Экран</button>
+    </div>
+
+    <!-- Мини-карта -->
+    <div id="minimap-container">
+        <canvas id="minimap-canvas" width="120" height="120"></canvas>
+    </div>
+
+    <!-- Спидометр -->
+    <div id="speedometer-panel">
+        <div id="speed-number">0</div>
+        <div id="speed-unit">КМ/Ч</div>
+        <div id="nitro-bar-container">
+            <div id="nitro-bar"></div>
+        </div>
+    </div>
+
+    <!-- Сенсорные кнопки управления (для Galaxy S10 и тачскринов) -->
+    <div class="touch-zone" id="touch-left-zone">
+        <div class="touch-btn" id="btn-left" data-key="left">◀</div>
+        <div class="touch-btn" id="btn-right" data-key="right">▶</div>
+    </div>
+
+    <div class="touch-zone" id="touch-right-zone">
+        <div class="touch-btn brake-btn" id="btn-brake" data-key="brake">ТОРМОЗ</div>
+        <div class="touch-btn nitro-btn" id="btn-nitro" data-key="nitro">⚡</div>
+        <div class="touch-btn" id="btn-gas" data-key="gas">ГАЗ</div>
+    </div>
+
+    <!-- Центральный баннер оповещений -->
+    <div id="center-banner">СТАРТ!</div>
+
+    <!-- Стартовое меню / Пауза -->
+    <div id="overlay-screen">
+        <h1>ТУРБО ГОНКИ 3D</h1>
+        <p>Камера от 3-го лица с повышенного ракурса. Оптимизировано для Samsung Galaxy S10 и автономной игры без интернета.</p>
+        <button class="start-btn" id="btn-start">ПОГНАЛИ!</button>
+        
+        <div class="controls-hint">
+            <span>📱 Сенсорные кнопки на экране</span>
+            <span>💻 ПК: W/A/S/D или Стрелки, Shift/Space - Нитро</span>
+        </div>
+    </div>
+
+    <!-- Общая библиотека Three.js из папки ../lib/ -->
+    <script src="../lib/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
