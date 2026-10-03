@@ -7,6 +7,7 @@ on:
     paths:
       - "twa-manifest.json"
       - "manifest.json"
+      - "icon-*.png"
       - ".github/workflows/build-twa.yml"
 
 jobs:
@@ -65,6 +66,13 @@ jobs:
           }
           EOF
           cat "$HOME/.bubblewrap/config.json"
+
+      - name: Serve local icons for Bubblewrap
+        run: |
+          python3 -m http.server 8080 &
+          sleep 1
+          sed -i 's|https://ssadovsky.github.io/kids-games/icon-512.png|http://localhost:8080/icon-512.png|g' twa-manifest.json
+          sed -i 's|https://ssadovsky.github.io/kids-games/icon-512-maskable.png|http://localhost:8080/icon-512-maskable.png|g' twa-manifest.json
 
       - name: Regenerate Android project from twa-manifest.json
         run: |
