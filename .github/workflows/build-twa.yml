@@ -13,6 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -98,6 +100,24 @@ jobs:
             app-release-bundle.aab
             app-release-signed.apk
           if-no-files-found: error
+
+      - name: Prepare release files
+        run: cp app-release-signed.apk app-release.apk
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Build"
+          draft: false
+          prerelease: false
+          make_latest: true
+          files: |
+            app-release.apk
+            app-release-signed.apk
+            app-release-bundle.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Remove keystore from runner workspace
         if: always()
