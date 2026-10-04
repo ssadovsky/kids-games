@@ -227,7 +227,7 @@ Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then 
     display:flex;
     align-items:center;
     gap:1.4vmin;
-    padding:1.4vmin calc(env(safe-area-inset-right, 0px) + 1.6vmin) calc(1.4vmin + env(safe-area-inset-bottom)) calc(env(safe-area-inset-left, 0px) + 1.6vmin);
+    padding:1.4vmin 1.6vmin calc(1.4vmin + env(safe-area-inset-bottom));
     background:var(--panel);
     border-top:0.6vmin solid var(--panel-border);
   }
@@ -378,7 +378,7 @@ Layout: straight horizon (no arc) — sky, then a distant sea+beach strip, then 
   /* ---------- back button ---------- */
   .back-btn{
     position:absolute;
-    top:calc(env(safe-area-inset-top, 0px) + 2vmin); left:calc(env(safe-area-inset-left, 0px) + 2vmin);
+    top:2vmin; left:calc(2vmin + 14px);
     width:9vmin; height:9vmin;
     min-width:44px; min-height:44px;
     max-width:54px; max-height:54px;
