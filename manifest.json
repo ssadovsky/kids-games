@@ -6,7 +6,7 @@
   "scope": "/kids-games/",
   "id": "/kids-games/",
   "display": "fullscreen",
-  "orientation": "any",
+  "orientation": "landscape",
   "background_color": "#080d1a",
   "theme_color": "#080d1a",
   "lang": "ru",

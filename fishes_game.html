@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Аквариум с рыбками</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2B2140;
+    --sand:#F4D086;
+    --sea-1:#1FA2FF;
+    --sea-2:#12D8FA;
+    --sea-3:#A6FFCB;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+  html,body{
+    width:100%; height:100%;
+    overflow:hidden;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    background:#12D8FA;
+    touch-action:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  #app{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+  }
+  canvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+  }
+
+  /* Верхняя панель управления */
+  .top-bar{
+    position:absolute;
+    top:calc(env(safe-area-inset-top, 6px) + 6px);
+    left:12px; right:12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    z-index:10;
+    pointer-events:none;
+  }
+  .btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#FFFFFFE8;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    color:var(--ink);
+    box-shadow:0 3px 0 var(--ink);
+    cursor:pointer;
+    pointer-events:auto;
+    transition:transform .1s ease, box-shadow .1s ease;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+  }
+  .btn:active{
+    transform:translateY(2px);
+    box-shadow:0 1px 0 var(--ink);
+  }
+  .btn-icon{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    padding:0;
+    text-decoration:none;
+    flex-shrink:0;
+  }
+  .btn-icon svg{ width:22px; height:22px; stroke:var(--ink); }
+
+  .actions-group{
+    display:flex;
+    gap:8px;
+    pointer-events:auto;
+  }
+  .action-btn{
+    height:40px;
+    padding:0 14px;
+    font-size:clamp(0.75rem, 2.3vmin, 0.95rem);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:#FFF3C2;
+  }
+
+  /* Подсказка в центре при старте */
+  .hint-toast{
+    position:absolute;
+    left:50%;
+    top:25%;
+    transform:translate(-50%, -50%);
+    background:#FFFFFFEE;
+    border:3px solid var(--ink);
+    border-radius:18px;
+    padding:10px 20px;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+    font-size:clamp(0.9rem, 2.8vmin, 1.2rem);
+    box-shadow:0 4px 0 var(--ink);
+    pointer-events:none;
+    z-index:9;
+    animation:fade-hint 3.5s forwards;
+    white-space:nowrap;
+  }
+  @keyframes fade-hint{
+    0%{ opacity:1; transform:translate(-50%, -50%) scale(1); }
+    70%{ opacity:1; transform:translate(-50%, -50%) scale(1); }
+    100%{ opacity:0; transform:translate(-50%, -60%) scale(0.9); }
+  }
+
+  /* Поворот экрана */
+  .rotate-prompt{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(43,33,64,0.94);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    color:#FFFFFF;
+    text-align:center;
+  }
+  @media screen and (orientation: portrait){
+    .rotate-prompt{ display:flex; }
+  }
+  .rotate-card{
+    background:#FFFFFF;
+    color:var(--ink);
+    border:4px solid var(--ink);
+    border-radius:22px;
+    padding:20px 24px;
+    max-width:300px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+  }
+  .rotate-icon{
+    width:56px;
+    height:56px;
+    color:#FFD23F;
+    margin-bottom:10px;
+    animation:phone-rotate 2.2s ease-in-out infinite;
+  }
+  .rotate-icon svg{ width:100%; height:100%; }
+  @keyframes phone-rotate{
+    0%,20%{ transform:rotate(0deg); }
+    50%,70%{ transform:rotate(-90deg); }
+    90%,100%{ transform:rotate(0deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="rotate-prompt">
+  <div class="rotate-card">
+    <div class="rotate-icon">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="18" y="10" width="28" height="44" rx="4"/>
+        <line x1="28" y1="46" x2="36" y2="46"/>
+        <path d="M48 20 A 24 24 0 0 1 48 44" stroke-dasharray="4 4" stroke-width="2.5"/>
+        <polyline points="48 48 48 42 42 45"/>
+      </svg>
+    </div>
+    <div style="font-family:'Comfortaa', cursive; font-weight:700; font-size:1.2rem; margin-bottom:6px;">Поверни экран 🔄</div>
+    <div style="font-size:0.88rem; opacity:0.85;">Для аквариума нужен горизонтальный экран!</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <a href="index.html" class="btn btn-icon" aria-label="В меню" title="В меню">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+
+    <div class="actions-group">
+      <button class="btn action-btn" id="addFishBtn">
+        <span style="font-size:18px;">➕</span> Рыбка
+      </button>
+      <button class="btn action-btn" id="toggleThemeBtn" style="background:#E2F0D9;">
+        <span id="themeIcon" style="font-size:18px;">🌙</span> Ночь
+      </button>
+    </div>
+  </div>
+
+  <div class="hint-toast">Тапай по воде, чтобы кормить рыбок! 🍞🐟</div>
+  <canvas id="aquariumCanvas"></canvas>
+</div>
+
+<script>
+// Web Audio API звуки
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+  // Бульк падающего корма
+  dropFood() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(550, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.12);
+  }
+  // Ням (рыбка съела корм)
+  eat() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(520, this.ctx.currentTime + 0.07);
+    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.1);
+  }
+  // Лопание пузыря
+  popBubble() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(700, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1100, this.ctx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.08);
+  }
+}
+const sfx = new SoundFX();
+
+function lockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+}
+window.addEventListener('load', lockLandscape);
+window.addEventListener('pointerdown', () => {
+  sfx.init();
+  lockLandscape();
+}, { once: true });
+
+// Canvas логика
+const canvas = document.getElementById('aquariumCanvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+let isNight = false;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Разновидности рыб (спокойные, плавные)
+const FISH_TYPES = [
+  { name: 'Немо', body: '#FF6B4A', stripe: '#FFFFFF', fin: '#FFA07A', w: 58, h: 36, speed: 0.55 },
+  { name: 'Дори', body: '#2E86DE', stripe: '#F1C40F', fin: '#54A0FF', w: 64, h: 42, speed: 0.65 },
+  { name: 'Золотая', body: '#FFA502', stripe: '#FFD23F', fin: '#FF4757', w: 52, h: 38, speed: 0.45 },
+  { name: 'Зеленая', body: '#2ED573', stripe: '#7BED9F', fin: '#10AC84', w: 48, h: 30, speed: 0.60 },
+  { name: 'Фиалка', body: '#9B59B6', stripe: '#E056FD', fin: '#BE2EDD', w: 54, h: 34, speed: 0.50 }
+];
+
+class Fish {
+  constructor(x, y, type) {
+    this.x = x || Math.random() * W;
+    this.y = y || Math.random() * (H - 140) + 60;
+    this.type = type || FISH_TYPES[Math.floor(Math.random() * FISH_TYPES.length)];
+    this.direction = Math.random() > 0.5 ? 1 : -1;
+    this.vx = this.direction * this.type.speed;
+    this.vy = (Math.random() - 0.5) * 0.2;
+    this.targetFood = null;
+    this.heartTimer = 0;
+    this.sizeBoost = 1;
+    this.wobblePhase = Math.random() * Math.PI * 2;
+    this.preferredY = Math.random() * (H - 160) + 70; // индивидуальный горизонт глубины
+  }
+  update(foods, allFishes) {
+    // 1. Поиск ближайшего корма
+    let nearest = null;
+    let minDist = 900;
+    for (let f of foods) {
+      const d = Math.hypot(f.x - this.x, f.y - this.y);
+      if (d < minDist) {
+        minDist = d;
+        nearest = f;
+      }
+    }
+    this.targetFood = nearest;
+
+    if (this.targetFood) {
+      // Поднажать к корму! Энергичный бросок навстречу
+      const angle = Math.atan2(this.targetFood.y - this.y, this.targetFood.x - this.x);
+      const eatSpeed = 3.6 + this.type.speed * 0.8;
+      this.vx += (Math.cos(angle) * eatSpeed - this.vx) * 0.14;
+      this.vy += (Math.sin(angle) * eatSpeed - this.vy) * 0.14;
+      this.direction = (this.targetFood.x >= this.x) ? 1 : -1;
+
+      // Рыбка касается корма и съедает
+      if (minDist < 28) {
+        sfx.eat();
+        this.targetFood.eaten = true;
+        this.heartTimer = 60;
+        this.sizeBoost = 1.25;
+        createBubbles(this.x, this.y, 4);
+
+        // Разбег после еды: не толпиться в одной точке, а весело разойтись!
+        if (Math.random() < 0.6) this.direction *= -1;
+        this.vx = this.direction * (this.type.speed * 2.4);
+        this.vy = (Math.random() - 0.5) * 2.2;
+        this.preferredY = Math.random() * (H - 160) + 70;
+        this.targetFood = null;
+      }
+    } else {
+      // Спокойное, грациозное плавание: распределяемся по глубине
+      this.wobblePhase += 0.03;
+      const dy = this.preferredY - this.y;
+      this.vy += dy * 0.002 + Math.sin(this.wobblePhase) * 0.015;
+      this.vy = Math.max(-0.6, Math.min(0.6, this.vy));
+
+      // Плавная скорость по X
+      const desiredVx = this.direction * this.type.speed;
+      this.vx += (desiredVx - this.vx) * 0.025;
+
+      // Периодическая самостоятельная смена курса и глубины
+      if (Math.random() < 0.005) {
+        this.direction *= -1;
+      }
+      if (Math.random() < 0.003) {
+        this.preferredY = Math.random() * (H - 160) + 70;
+      }
+    }
+
+    // 2. СЕПАРАЦИЯ (РАСТАЛКИВАНИЕ РЫБОК): рыбки не сбиваются в пятно и кучу
+    if (allFishes) {
+      for (let other of allFishes) {
+        if (other === this) continue;
+        const dx = this.x - other.x;
+        const dy = this.y - other.y;
+        const dist = Math.hypot(dx, dy);
+        const minDistComfort = (this.type.w + other.type.w) * 0.52; // ~50-60px
+        if (dist < minDistComfort && dist > 0.01) {
+          const push = ((minDistComfort - dist) / minDistComfort) * 0.18;
+          this.vx += (dx / dist) * push;
+          this.vy += (dy / dist) * push;
+        }
+      }
+    }
+
+    if (this.sizeBoost > 1) this.sizeBoost -= 0.005;
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Мягкий отскок от границ
+    const pad = 50;
+    if (this.x < pad) { this.direction = 1; this.vx = Math.abs(this.vx) * 0.7; }
+    if (this.x > W - pad) { this.direction = -1; this.vx = -Math.abs(this.vx) * 0.7; }
+    if (this.y < 60) { this.y = 60; this.vy = Math.abs(this.vy); }
+    if (this.y > H - 90) { this.y = H - 90; this.vy = -Math.abs(this.vy); }
+  }
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    const facingRight = this.vx >= 0;
+    if (!facingRight) ctx.scale(-1, 1);
+    ctx.scale(this.sizeBoost, this.sizeBoost);
+
+    const w = this.type.w;
+    const h = this.type.h;
+
+    // Хвостик: плавное грациозное плавание без дрожания и паники
+    const freq = this.targetFood ? 0.0055 : 0.0028;
+    const amp = this.targetFood ? 6.5 : 4.5;
+    const tailWiggle = Math.sin(Date.now() * freq + this.x * 0.04) * amp;
+    ctx.fillStyle = this.type.fin;
+    ctx.strokeStyle = '#2B2140';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.lineTo(-w * 0.75, -h * 0.5 + tailWiggle);
+    ctx.lineTo(-w * 0.6, 0);
+    ctx.lineTo(-w * 0.75, h * 0.5 + tailWiggle);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Тело рыбки
+    ctx.fillStyle = this.type.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Полоски на теле
+    ctx.fillStyle = this.type.stripe;
+    ctx.beginPath();
+    ctx.ellipse(-w * 0.05, 0, w * 0.12, h * 0.46, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Плавник верхний
+    ctx.fillStyle = this.type.fin;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.1, -h * 0.45);
+    ctx.quadraticCurveTo(0, -h * 0.8, w * 0.2, -h * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Глаз
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(w * 0.26, -h * 0.12, h * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Зрачок
+    ctx.fillStyle = '#2B2140';
+    ctx.beginPath();
+    ctx.arc(w * 0.3, -h * 0.12, h * 0.11, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Блик в глазу
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(w * 0.32, -h * 0.16, h * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Сердечко сытости
+    if (this.heartTimer > 0) {
+      this.heartTimer--;
+      ctx.fillStyle = '#FF4757';
+      ctx.font = '22px Arial';
+      ctx.fillText('❤️', -10, -h * 0.8);
+    }
+
+    ctx.restore();
+  }
+}
+
+// Медуза
+class Jellyfish {
+  constructor() {
+    this.x = W * 0.8;
+    this.y = H * 0.5;
+    this.vy = -0.6;
+    this.phase = 0;
+  }
+  update() {
+    this.phase += 0.05;
+    this.y += Math.sin(this.phase) * 1.2 - 0.4;
+    if (this.y < 80) this.y = H - 120;
+  }
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    const squish = Math.sin(this.phase) * 0.2;
+    ctx.scale(1 + squish, 1 - squish);
+
+    // Купол
+    ctx.fillStyle = isNight ? '#E056FDCC' : '#C7ECEECC';
+    ctx.strokeStyle = '#2B2140';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 32, Math.PI, 0, false);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Щупальца
+    ctx.strokeStyle = isNight ? '#FF79CD' : '#7ED6DF';
+    ctx.lineWidth = 3.5;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 10, 0);
+      const wave = Math.sin(this.phase + i) * 6;
+      ctx.quadraticCurveTo(i * 10 + wave, 20, i * 10 - wave, 42);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// Корм (гранулы)
+class Food {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.vy = 0.9 + Math.random() * 0.4;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.r = 6;
+    this.color = ['#FFA502', '#FF6348', '#FFD23F', '#8C5331'][Math.floor(Math.random() * 4)];
+    this.eaten = false;
+  }
+  update() {
+    this.y += this.vy;
+    this.x += this.vx;
+  }
+  draw() {
+    ctx.save();
+    ctx.fillStyle = this.color;
+    ctx.strokeStyle = '#2B2140';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// Пузыри
+class Bubble {
+  constructor(x, y, r) {
+    this.x = x !== undefined ? x : Math.random() * W;
+    this.y = y !== undefined ? y : H + 20;
+    this.r = r || (6 + Math.random() * 14);
+    this.vy = 1.2 + Math.random() * 1.5;
+    this.wobble = Math.random() * Math.PI;
+  }
+  update() {
+    this.y -= this.vy;
+    this.wobble += 0.05;
+    this.x += Math.sin(this.wobble) * 0.6;
+  }
+  draw() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Блик на пузыре
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(this.x - this.r * 0.3, this.y - this.r * 0.3, this.r * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// Массивы объектов
+const fishes = [];
+for (let i = 0; i < 5; i++) {
+  fishes.push(new Fish(null, null, FISH_TYPES[i % FISH_TYPES.length]));
+}
+const jelly = new Jellyfish();
+const foods = [];
+const bubbles = [];
+
+function createBubbles(x, y, count = 5) {
+  for (let i = 0; i < count; i++) {
+    bubbles.push(new Bubble(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20));
+  }
+}
+
+// Периодические пузыри со дна
+setInterval(() => {
+  if (bubbles.length < 24) {
+    bubbles.push(new Bubble(Math.random() * W, H + 10));
+  }
+}, 450);
+
+// Тап по экрану: кормление или щекотка рыбки
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.init();
+
+  const rect = canvas.getBoundingClientRect();
+  const tx = e.clientX - rect.left;
+  const ty = e.clientY - rect.top;
+
+  // Проверка: тапнули по пузырьку?
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    if (Math.hypot(b.x - tx, b.y - ty) < b.r + 14) {
+      sfx.popBubble();
+      bubbles.splice(i, 1);
+      return;
+    }
+  }
+
+  // Проверка: тапнули по рыбке? (она пускает пузыри и ускоряется)
+  for (let f of fishes) {
+    if (Math.hypot(f.x - tx, f.y - ty) < 45) {
+      sfx.popBubble();
+      f.vx *= 1.8;
+      f.heartTimer = 40;
+      createBubbles(f.x, f.y, 6);
+      return;
+    }
+  }
+
+  // Иначе — сыпем корм
+  sfx.dropFood();
+  foods.push(new Food(tx, ty));
+  if (Math.random() > 0.4) foods.push(new Food(tx + 14, ty - 6));
+});
+
+// Добавить рыбку
+document.getElementById('addFishBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.init();
+  sfx.popBubble();
+  const newType = FISH_TYPES[fishes.length % FISH_TYPES.length];
+  fishes.push(new Fish(W * 0.1, H * 0.4, newType));
+  createBubbles(W * 0.1, H * 0.4, 8);
+});
+
+// Переключить День/Ночь
+document.getElementById('toggleThemeBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.init();
+  sfx.popBubble();
+  isNight = !isNight;
+  document.getElementById('themeIcon').textContent = isNight ? '☀️' : '🌙';
+  document.getElementById('toggleThemeBtn').childNodes[2].textContent = isNight ? ' День' : ' Ночь';
+});
+
+// Анимационный цикл
+function loop() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Вода (фон)
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  if (isNight) {
+    grad.addColorStop(0, '#0A192F');
+    grad.addColorStop(0.7, '#112240');
+    grad.addColorStop(1, '#020C1B');
+  } else {
+    grad.addColorStop(0, '#70A1FF');
+    grad.addColorStop(0.5, '#2ED573');
+    grad.addColorStop(0.9, '#1E90FF');
+    grad.addColorStop(1, '#0C2461');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Песчаное дно
+  ctx.fillStyle = isNight ? '#3D311A' : '#F4D086';
+  ctx.strokeStyle = '#2B2140';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, H - 65);
+  ctx.bezierCurveTo(W * 0.3, H - 85, W * 0.7, H - 45, W, H - 65);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Водоросли на дне (колышутся)
+  const time = Date.now() * 0.002;
+  ctx.strokeStyle = isNight ? '#00D2D3' : '#10AC84';
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
+  const weedPositions = [W * 0.08, W * 0.12, W * 0.85, W * 0.92];
+  weedPositions.forEach((wx, idx) => {
+    ctx.beginPath();
+    ctx.moveTo(wx, H - 50);
+    const sway = Math.sin(time + idx * 1.5) * 18;
+    ctx.bezierCurveTo(wx + sway, H - 120, wx - sway, H - 180, wx + sway * 1.2, H - 240);
+    ctx.stroke();
+  });
+
+  // Обновление и отрисовка медузы
+  jelly.update();
+  jelly.draw();
+
+  // Корм
+  for (let i = foods.length - 1; i >= 0; i--) {
+    const f = foods[i];
+    f.update();
+    f.draw();
+    if (f.eaten || f.y > H - 60) {
+      foods.splice(i, 1);
+    }
+  }
+
+  // Рыбки
+  for (let fish of fishes) {
+    fish.update(foods, fishes);
+    fish.draw();
+  }
+
+  // Пузыри
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    b.update();
+    b.draw();
+    if (b.y < -30) {
+      bubbles.splice(i, 1);
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

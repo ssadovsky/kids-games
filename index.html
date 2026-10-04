@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Игры</title>
-<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
     --sky-1:#8FD3F4;
@@ -13,42 +13,48 @@
     --ink:#2B2140;
     --sun:#FFD23F;
   }
-  *{ box-sizing:border-box; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{
     margin:0; padding:0; min-height:100%;
     font-family:'Nunito', sans-serif;
     color:var(--ink);
     background:linear-gradient(180deg, var(--sky-1), var(--sky-2) 60%, #CFEFC9 60%, #9FDB8F 100%);
     background-attachment:fixed;
+    touch-action:manipulation;
   }
   .wrap{
     min-height:100vh;
+    min-height:100dvh;
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:4vmin 4vmin 6vmin;
+    justify-content:center;
+    padding:1vmin 2vmin 1.5vmin;
   }
   h1{
     font-family:'Comfortaa', sans-serif;
     font-weight:700;
-    font-size:clamp(1.6rem, 5vmin, 2.6rem);
-    margin:2vmin 0 1vmin;
+    font-size:clamp(1rem, 3.4vmin, 1.6rem);
+    margin:0 0 0.8vmin;
     text-align:center;
-    text-shadow:0 2px 0 rgba(255,255,255,0.6);
+    text-shadow:0 2px 0 rgba(255,255,255,0.7);
   }
   .sun{
     position:absolute;
-    top:4vmin; right:6vmin;
-    width:10vmin; height:10vmin;
+    top:1.5vmin; right:2.5vmin;
+    width:6.5vmin; height:6.5vmin;
+    min-width:30px; min-height:30px;
     border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #FFF3C2, var(--sun) 70%);
-    box-shadow:0 0 4vmin rgba(255,210,63,0.55);
+    box-shadow:0 0 2vmin rgba(255,210,63,0.55);
+    pointer-events:none;
   }
   .cloud{
     position:absolute;
     background:#fff;
     border-radius:99px;
     opacity:0.9;
+    pointer-events:none;
   }
   .cloud::before, .cloud::after{
     content:"";
@@ -56,69 +62,118 @@
     background:#fff;
     border-radius:50%;
   }
-  .cloud1{ top:8vmin; left:6vmin; width:10vmin; height:4vmin; }
-  .cloud1::before{ width:5vmin; height:5vmin; top:-2.6vmin; left:1vmin; }
-  .cloud1::after{ width:4vmin; height:4vmin; top:-2vmin; left:5.4vmin; }
+  .cloud1{ top:3vmin; left:2.5vmin; width:7.5vmin; height:3vmin; }
+  .cloud1::before{ width:3.6vmin; height:3.6vmin; top:-1.8vmin; left:0.8vmin; }
+  .cloud1::after{ width:2.8vmin; height:2.8vmin; top:-1.3vmin; left:3.8vmin; }
+
+  /* Сетка 5 колонок х 2 ряда для Galaxy S10 (360px высоты) */
   .grid{
     position:relative;
     z-index:1;
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(180px, 220px));
-    gap:3vmin;
+    grid-template-columns:repeat(5, minmax(90px, 150px));
+    gap:clamp(5px, 1.2vmin, 12px);
     justify-content:center;
-    max-width:1000px;
+    max-width:880px;
     width:100%;
-    margin-top:2vmin;
+  }
+  @media (max-width: 620px){
+    .grid{
+      grid-template-columns:repeat(3, minmax(90px, 140px));
+    }
   }
   .card{
     display:flex;
     flex-direction:column;
     align-items:center;
     background:var(--card-bg);
-    border:0.4vmin solid var(--ink);
-    border-radius:1.6vmin;
-    padding:3vmin 2vmin 2.2vmin;
+    border:2.5px solid var(--ink);
+    border-radius:15px;
+    padding:1vmin 0.8vmin 0.9vmin;
     text-decoration:none;
     color:var(--ink);
-    box-shadow:0 0.6vmin 0 rgba(43,33,64,0.18);
-    transition:transform .15s ease, box-shadow .15s ease;
+    box-shadow:0 3px 0 rgba(43,33,64,0.18);
+    transition:transform .12s ease, box-shadow .12s ease;
   }
   .card:active{
-    transform:translateY(0.4vmin);
-    box-shadow:0 0.2vmin 0 rgba(43,33,64,0.18);
+    transform:translateY(2px);
+    box-shadow:0 1px 0 rgba(43,33,64,0.18);
   }
   @media(hover:hover){
     .card:hover{
-      transform:translateY(-0.4vmin);
-      box-shadow:0 1vmin 0 rgba(43,33,64,0.18);
+      transform:translateY(-2.5px);
+      box-shadow:0 5px 0 rgba(43,33,64,0.18);
     }
   }
-  .icon{ width:16vmin; max-width:120px; height:16vmin; max-height:120px; }
+  .icon{
+    width:clamp(36px, 7.5vmin, 52px);
+    height:clamp(36px, 7.5vmin, 52px);
+    flex-shrink:0;
+  }
   .card-title{
     font-family:'Comfortaa', sans-serif;
     font-weight:700;
-    font-size:1.15rem;
-    margin-top:1.6vmin;
-    text-align:center;
-  }
-  .card-sub{
-    font-size:0.85rem;
-    opacity:0.65;
+    font-size:clamp(0.72rem, 1.9vmin, 0.88rem);
     margin-top:0.4vmin;
     text-align:center;
+    white-space:nowrap;
   }
-  .card.soon{
-    opacity:0.55;
-    border-style:dashed;
-    cursor:default;
+  .card-sub{
+    font-size:clamp(0.6rem, 1.4vmin, 0.72rem);
+    opacity:0.7;
+    margin-top:0.1vmin;
+    text-align:center;
+    white-space:nowrap;
   }
-  .card.soon .card-title{ opacity:0.8; }
   footer{
-    margin-top:auto;
-    padding-top:4vmin;
-    font-size:0.8rem;
+    margin-top:0.8vmin;
+    font-size:0.7rem;
     opacity:0.6;
     text-align:center;
+  }
+
+  /* Экран поворота экрана */
+  .rotate-prompt{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(43,33,64,0.94);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    color:#FFFFFF;
+    text-align:center;
+  }
+  @media screen and (orientation: portrait){
+    .rotate-prompt{ display:flex; }
+  }
+  .rotate-card{
+    background:#FFFFFF;
+    color:var(--ink);
+    border:4px solid var(--ink);
+    border-radius:22px;
+    padding:20px 24px;
+    max-width:300px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+  }
+  .rotate-icon{
+    width:56px;
+    height:56px;
+    color:#FFD23F;
+    margin-bottom:10px;
+    animation:phone-rotate 2.2s ease-in-out infinite;
+  }
+  .rotate-icon svg{ width:100%; height:100%; }
+  @keyframes phone-rotate{
+    0%,20%{ transform:rotate(0deg); }
+    50%,70%{ transform:rotate(-90deg); }
+    90%,100%{ transform:rotate(0deg); }
   }
 </style>
 <link rel="manifest" href="manifest.json">
@@ -127,12 +182,135 @@
 <link rel="apple-touch-icon" href="icon-512.png">
 </head>
 <body>
+  <div class="rotate-prompt">
+    <div class="rotate-card">
+      <div class="rotate-icon">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="18" y="10" width="28" height="44" rx="4"/>
+          <line x1="28" y1="46" x2="36" y2="46"/>
+          <path d="M48 20 A 24 24 0 0 1 48 44" stroke-dasharray="4 4" stroke-width="2.5"/>
+          <polyline points="48 48 48 42 42 45"/>
+        </svg>
+      </div>
+      <div style="font-family:'Comfortaa', cursive; font-weight:700; font-size:1.2rem; margin-bottom:6px;">Поверни экран 🔄</div>
+      <div style="font-size:0.88rem; opacity:0.85;">Игры работают в горизонтальном (альбомном) режиме</div>
+    </div>
+  </div>
+
   <div class="sun"></div>
   <div class="cloud cloud1"></div>
   <div class="wrap">
     <h1>Выбери игру 🎮</h1>
     <div class="grid">
 
+      <!-- 1. Раскраска -->
+      <a class="card" href="coloring_game.html">
+        <svg class="icon" viewBox="0 0 120 120">
+          <path d="M 60 15 C 25 15 12 38 12 68 C 12 95 32 108 55 108 C 65 108 72 100 72 90 C 72 84 69 80 69 74 C 69 66 76 62 84 62 L 92 62 C 105 62 112 52 112 38 C 112 22 92 15 60 15 Z" fill="#FFEAA7" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/>
+          <circle cx="34" cy="46" r="10" fill="#FF4757" stroke="#2B2140" stroke-width="3.5"/>
+          <circle cx="58" cy="34" r="10" fill="#FFA502" stroke="#2B2140" stroke-width="3.5"/>
+          <circle cx="82" cy="42" r="10" fill="#2ED573" stroke="#2B2140" stroke-width="3.5"/>
+          <circle cx="36" cy="74" r="10" fill="#1E90FF" stroke="#2B2140" stroke-width="3.5"/>
+          <ellipse cx="88" cy="84" rx="10" ry="12" fill="#B6E6FF" stroke="#2B2140" stroke-width="4"/>
+          <g transform="translate(64, 46) rotate(35)">
+            <path d="M 0 0 L 8 -2 L 55 35 L 48 40 Z" fill="#D35400" stroke="#2B2140" stroke-width="3"/>
+            <path d="M 52 38 L 62 46 C 65 49 68 53 66 56 C 64 58 59 58 56 55 Z" fill="#8B5CF6" stroke="#2B2140" stroke-width="3"/>
+          </g>
+        </svg>
+        <div class="card-title">Раскраска</div>
+        <div class="card-sub">рисуем пальчиком</div>
+      </a>
+
+      <!-- 2. Пазлы -->
+      <a class="card" href="puzzle_game.html">
+        <svg class="icon" viewBox="0 0 120 120">
+          <rect x="18" y="18" width="84" height="84" rx="16" fill="#FFF3BE" stroke="#2B2140" stroke-width="5"/>
+          <!-- Деталька пазла внутри -->
+          <path d="M 35 45 L 50 45 C 50 35 60 35 60 45 L 75 45 C 75 55 85 55 85 65 L 85 85 L 65 85 C 65 75 55 75 55 85 L 35 85 Z" fill="#FF6B6B" stroke="#2B2140" stroke-width="4" stroke-linejoin="round"/>
+          <polygon points="58,58 61,65 68,65 62,69 64,76 58,72 52,76 54,69 48,65 55,65" fill="#FFD23F"/>
+        </svg>
+        <div class="card-title">Пазлы</div>
+        <div class="card-sub">машинки и ракеты</div>
+      </a>
+
+      <!-- 3. Накорми зверей -->
+      <a class="card" href="feed_animals_game.html">
+        <svg class="icon" viewBox="0 0 120 120">
+          <!-- Мордочка зайки -->
+          <ellipse cx="60" cy="65" rx="36" ry="34" fill="#FFFFFF" stroke="#2B2140" stroke-width="4.5"/>
+          <!-- Ушки -->
+          <ellipse cx="45" cy="28" rx="10" ry="24" fill="#FFFFFF" stroke="#2B2140" stroke-width="4" transform="rotate(-10 45 28)"/>
+          <ellipse cx="45" cy="28" rx="5" ry="16" fill="#FFB8B8" transform="rotate(-10 45 28)"/>
+          <ellipse cx="75" cy="28" rx="10" ry="24" fill="#FFFFFF" stroke="#2B2140" stroke-width="4" transform="rotate(10 75 28)"/>
+          <ellipse cx="75" cy="28" rx="5" ry="16" fill="#FFB8B8" transform="rotate(10 75 28)"/>
+          <!-- Глазки -->
+          <circle cx="48" cy="60" r="5" fill="#2B2140"/>
+          <circle cx="72" cy="60" r="5" fill="#2B2140"/>
+          <!-- Носик и ротик -->
+          <polygon points="60,68 56,64 64,64" fill="#FF6584"/>
+          <ellipse cx="60" cy="78" rx="8" ry="7" fill="#FF4757" stroke="#2B2140" stroke-width="2.5"/>
+          <!-- Морковка рядом -->
+          <g transform="translate(76, 70) rotate(-25)">
+            <polygon points="15,5 5,30 20,32" fill="#FFA502" stroke="#2B2140" stroke-width="2.5"/>
+            <path d="M 15 5 Q 18 -2 12 -4" fill="none" stroke="#2ED573" stroke-width="2.5"/>
+          </g>
+        </svg>
+        <div class="card-title">Накорми зверей</div>
+        <div class="card-sub">вкусняшки зверям</div>
+      </a>
+
+      <!-- 4. Цифры и счёт -->
+      <a class="card" href="numbers_game.html">
+        <svg class="icon" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="48" fill="#B4F0D8" stroke="#2B2140" stroke-width="5"/>
+          <text x="35" y="55" font-family="'Comfortaa', cursive" font-weight="900" font-size="34" fill="#FF4757" stroke="#2B2140" stroke-width="2">1</text>
+          <text x="65" y="55" font-family="'Comfortaa', cursive" font-weight="900" font-size="34" fill="#1E90FF" stroke="#2B2140" stroke-width="2">2</text>
+          <text x="48" y="94" font-family="'Comfortaa', cursive" font-weight="900" font-size="36" fill="#2ED573" stroke="#2B2140" stroke-width="2">3</text>
+          <polygon points="85,68 89,78 100,78 91,85 94,95 85,89 76,95 79,85 70,78 81,78" fill="#FFD23F" stroke="#2B2140" stroke-width="2.5"/>
+        </svg>
+        <div class="card-title">Цифры и счёт</div>
+        <div class="card-sub">до 40 и сравнение</div>
+      </a>
+
+      <!-- 5. Пианино -->
+      <a class="card" href="piano_game.html">
+        <svg class="icon" viewBox="0 0 120 120">
+          <rect x="14" y="24" width="92" height="72" rx="14" fill="#FFF3BE" stroke="#2B2140" stroke-width="5"/>
+          <!-- Радужные клавиши -->
+          <rect x="22" y="32" width="16" height="56" rx="4" fill="#FF6B6B" stroke="#2B2140" stroke-width="3"/>
+          <rect x="42" y="32" width="16" height="56" rx="4" fill="#FFD23F" stroke="#2B2140" stroke-width="3"/>
+          <rect x="62" y="32" width="16" height="56" rx="4" fill="#2ED573" stroke="#2B2140" stroke-width="3"/>
+          <rect x="82" y="32" width="16" height="56" rx="4" fill="#1E90FF" stroke="#2B2140" stroke-width="3"/>
+          <!-- Чёрные полутона -->
+          <rect x="34" y="32" width="9" height="30" rx="3" fill="#2B2140"/>
+          <rect x="54" y="32" width="9" height="30" rx="3" fill="#2B2140"/>
+          <rect x="74" y="32" width="9" height="30" rx="3" fill="#2B2140"/>
+          <!-- Нотка -->
+          <path d="M 88 18 L 88 28 A 4 4 0 1 1 84 25" fill="#FF4757" stroke="#2B2140" stroke-width="2"/>
+        </svg>
+        <div class="card-title">Пианино</div>
+        <div class="card-sub">песенки и звуки</div>
+      </a>
+
+      <!-- 5. Рыбки -->
+      <a class="card" href="fishes_game.html">
+        <svg class="icon" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="48" fill="#A8EDEA" stroke="#2B2140" stroke-width="5"/>
+          <g transform="translate(60, 60)">
+            <path d="M -15 0 L -35 -16 L -28 0 L -35 16 Z" fill="#FFA07A" stroke="#2B2140" stroke-width="3"/>
+            <ellipse cx="5" cy="0" rx="26" ry="18" fill="#FF6B4A" stroke="#2B2140" stroke-width="3.5"/>
+            <ellipse cx="2" cy="0" rx="6" ry="16" fill="#FFFFFF" stroke="#2B2140" stroke-width="3"/>
+            <circle cx="18" cy="-5" r="5" fill="#FFFFFF" stroke="#2B2140" stroke-width="2"/>
+            <circle cx="19" cy="-5" r="2.5" fill="#2B2140"/>
+            <circle cx="34" cy="-14" r="4" fill="none" stroke="#2B2140" stroke-width="2"/>
+            <circle cx="42" cy="-24" r="6" fill="none" stroke="#2B2140" stroke-width="2"/>
+          </g>
+        </svg>
+        <div class="card-title">Рыбки</div>
+        <div class="card-sub">кормим в аквариуме</div>
+      </a>
+
+      <!-- 6. Стройка -->
       <a class="card" href="build_house_game.html">
         <svg class="icon" viewBox="0 0 120 120">
           <polygon points="10,58 60,20 110,58" fill="#E4483A" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/>
@@ -143,9 +321,10 @@
           <circle cx="65" cy="90" r="1.6" fill="#2B2140"/>
         </svg>
         <div class="card-title">Стройка</div>
-        <div class="card-sub">строим домик у моря</div>
+        <div class="card-sub">строим домик</div>
       </a>
 
+      <!-- 7. Пузыри -->
       <a class="card" href="soap_bubbles_game.html">
         <svg class="icon" viewBox="0 0 120 120">
           <circle cx="46" cy="52" r="30" fill="#B6E6FF" stroke="#2B2140" stroke-width="5"/>
@@ -153,10 +332,11 @@
           <circle cx="82" cy="78" r="18" fill="#FFC2E0" stroke="#2B2140" stroke-width="5"/>
           <circle cx="88" cy="72" r="6" fill="#ffffff" opacity="0.8"/>
         </svg>
-        <div class="card-title">Мыльные пузыри</div>
+        <div class="card-title">Пузыри</div>
         <div class="card-sub">лопай пузырики</div>
       </a>
 
+      <!-- 8. Гонки 3D -->
       <a class="card" href="racing/index.html">
         <svg class="icon" viewBox="0 0 120 120">
           <rect x="25" y="58" width="70" height="22" rx="6" fill="#00D2FF" stroke="#2B2140" stroke-width="5"/>
@@ -169,30 +349,27 @@
           <circle cx="42" cy="80" r="5" fill="#EDEAE2"/>
           <circle cx="78" cy="80" r="12" fill="#2B2140"/>
           <circle cx="78" cy="80" r="5" fill="#EDEAE2"/>
-          <polygon points="56,62 66,62 60,68 68,68 54,76 58,70 52,70" fill="#E4483A"/>
         </svg>
         <div class="card-title">Гонки 3D</div>
-        <div class="card-sub">турбо заезд на треке</div>
+        <div class="card-sub">турбо заезд</div>
       </a>
-
-      <div class="card soon">
-        <svg class="icon" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="46" fill="#EDEAE2" stroke="#2B2140" stroke-width="5" stroke-dasharray="8 8"/>
-          <text x="60" y="70" font-size="40" text-anchor="middle" fill="#2B2140" font-family="Nunito, sans-serif" font-weight="800">?</text>
-        </svg>
-        <div class="card-title">Скоро</div>
-        <div class="card-sub">новая игра в разработке</div>
-      </div>
 
     </div>
     <footer>сделано с любовью 💛</footer>
   </div>
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
-  });
+function lockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
 }
+window.addEventListener('load', () => {
+  lockLandscape();
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+});
+window.addEventListener('pointerdown', lockLandscape, { once: true });
 </script>
 </body>
 </html>

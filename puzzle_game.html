@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Пазлы для малышей</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-1:#85D8CE;
+    --sky-2:#085078;
+    --ink:#2B2140;
+    --sun:#FFD23F;
+    --tray-bg:#FFF8E7;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+  html,body{
+    width:100%; height:100%;
+    overflow:hidden;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    background:linear-gradient(135deg, #A8EDEA 0%, #FED6E3 100%);
+    touch-action:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  #app{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:center;
+    padding:calc(env(safe-area-inset-top, 6px) + 4px) 12px calc(env(safe-area-inset-bottom, 6px) + 6px);
+  }
+
+  /* Верхняя панель */
+  .top-bar{
+    width:100%;
+    max-width:960px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    z-index:100;
+  }
+  .btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#FFFFFF;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    color:var(--ink);
+    box-shadow:0 3px 0 var(--ink);
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+  }
+  .btn:active{
+    transform:translateY(2px);
+    box-shadow:0 1px 0 var(--ink);
+  }
+  .btn-icon{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    padding:0;
+    text-decoration:none;
+    flex-shrink:0;
+  }
+  .btn-icon svg{ width:22px; height:22px; stroke:var(--ink); }
+
+  .nav-group{
+    display:flex;
+    align-items:center;
+    background:#FFFFFFE6;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    padding:2px 8px;
+    box-shadow:0 3px 0 var(--ink);
+    gap:8px;
+  }
+  .nav-btn{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:#FFF3C2;
+    border:2.5px solid var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+    cursor:pointer;
+    box-shadow:0 2px 0 var(--ink);
+  }
+  .level-title{
+    font-family:'Comfortaa', cursive;
+    font-size:clamp(0.78rem, 2.3vmin, 0.95rem);
+    font-weight:700;
+    white-space:nowrap;
+  }
+
+  /* Игровая арена */
+  .puzzle-arena{
+    flex:1;
+    width:100%;
+    max-width:960px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:center;
+    padding:4px 0;
+    min-height:0;
+  }
+
+  /* Рамка сборки (слева) */
+  .target-frame{
+    flex:1.2;
+    height:100%;
+    max-height:calc(100vh - 75px);
+    background:#FFFFFF;
+    border:3.5px solid var(--ink);
+    border-radius:20px;
+    box-shadow:0 6px 0 var(--ink);
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px;
+  }
+  #targetSvg{
+    width:100%;
+    height:100%;
+    max-height:100%;
+    object-fit:contain;
+  }
+
+  /* Лоток с деталями (справа) — 3 столбца x 2 ряда для 6 деталей */
+  .pieces-tray{
+    flex:0.85;
+    height:100%;
+    max-height:calc(100vh - 75px);
+    background:var(--tray-bg);
+    border:3.5px dashed var(--ink);
+    border-radius:20px;
+    box-shadow:0 6px 0 var(--ink);
+    position:relative;
+    overflow:hidden;
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    grid-template-rows:repeat(2, 1fr);
+    gap:8px;
+    padding:8px;
+    align-items:center;
+    justify-items:center;
+  }
+
+  /* Слот под деталь в лотке */
+  .piece-slot{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#FFFFFFCC;
+    border:2px dashed rgba(43,33,64,0.25);
+    border-radius:12px;
+    position:relative;
+    padding:2px;
+  }
+
+  /* Деталь пазла */
+  .puzzle-piece{
+    width:94%;
+    height:94%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:grab;
+    touch-action:none;
+    user-select:none;
+    transition:transform .12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    filter:drop-shadow(0 3px 5px rgba(0,0,0,0.18));
+  }
+  .puzzle-piece svg{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    pointer-events:none;
+  }
+  .puzzle-piece.dragging{
+    cursor:grabbing;
+    transform:scale(1.28);
+    z-index:9999 !important;
+    filter:drop-shadow(0 12px 20px rgba(0,0,0,0.3));
+  }
+  .puzzle-piece.placed{
+    opacity:0.18;
+    pointer-events:none;
+    filter:grayscale(0.8);
+  }
+
+  /* Силуэты в рамке сборки */
+  .slot-ghost{
+    opacity:0.18;
+    fill:#2B2140;
+    stroke:#2B2140;
+    stroke-width:3;
+  }
+  .slot-active{
+    transition:opacity 0.25s ease-out;
+  }
+
+  /* МОДАЛЬНОЕ ОКНО ПОБЕДЫ БЕЗ БУКВ */
+  .win-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(43,33,64,0.65);
+    backdrop-filter:blur(4px);
+    z-index:99999;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    animation:fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn{
+    from{ opacity:0; }
+    to{ opacity:1; }
+  }
+  .win-card{
+    background:#FFFFFF;
+    border:4px solid var(--ink);
+    border-radius:28px;
+    padding:20px 32px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 12px 32px rgba(0,0,0,0.35);
+    animation:popModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes popModal{
+    from{ transform:scale(0.5); opacity:0; }
+    to{ transform:scale(1); opacity:1; }
+  }
+  .win-star-badge{
+    font-size:clamp(56px, 14vmin, 84px);
+    animation:starPulse 1.2s infinite alternate ease-in-out;
+    filter:drop-shadow(0 4px 10px rgba(255,210,63,0.6));
+    margin-bottom:12px;
+  }
+  @keyframes starPulse{
+    from{ transform:scale(1) rotate(-5deg); }
+    to{ transform:scale(1.18) rotate(5deg); }
+  }
+  .win-actions{
+    display:flex;
+    gap:20px;
+    align-items:center;
+  }
+  .win-action-btn{
+    width:clamp(64px, 14vmin, 84px);
+    height:clamp(64px, 14vmin, 84px);
+    border-radius:50%;
+    border:4px solid var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 6px 0 var(--ink);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .win-action-btn:active{
+    transform:translateY(4px);
+    box-shadow:0 2px 0 var(--ink);
+  }
+  .btn-retry{
+    background:#FFD23F;
+  }
+  .btn-next{
+    background:#2ED573;
+  }
+  .win-action-btn svg{
+    width:55%;
+    height:55%;
+    stroke:var(--ink);
+    fill:none;
+  }
+
+  /* Победный салют */
+  .confetti{
+    position:absolute;
+    pointer-events:none;
+    z-index:9999;
+    animation:confetti-fly 2s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  }
+  @keyframes confetti-fly{
+    0%{ transform:translate(0, 0) scale(0.6) rotate(0); opacity:1; }
+    100%{ transform:translate(var(--cx), var(--cy)) scale(1.3) rotate(600deg); opacity:0; }
+  }
+
+  /* Поворот экрана */
+  .rotate-prompt{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(43,33,64,0.94);
+    backdrop-filter:blur(6px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    color:#FFFFFF;
+    text-align:center;
+  }
+  @media screen and (orientation: portrait){
+    .rotate-prompt{ display:flex; }
+  }
+  .rotate-card{
+    background:#FFFFFF;
+    color:var(--ink);
+    border:4px solid var(--ink);
+    border-radius:22px;
+    padding:20px 24px;
+    max-width:300px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+  }
+  .rotate-icon{
+    width:56px;
+    height:56px;
+    color:#FFD23F;
+    margin-bottom:10px;
+    animation:phone-rotate 2.2s ease-in-out infinite;
+  }
+  .rotate-icon svg{ width:100%; height:100%; }
+  @keyframes phone-rotate{
+    0%,20%{ transform:rotate(0deg); }
+    50%,70%{ transform:rotate(-90deg); }
+    90%,100%{ transform:rotate(0deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="rotate-prompt">
+  <div class="rotate-card">
+    <div class="rotate-icon">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="18" y="10" width="28" height="44" rx="4"/>
+        <line x1="28" y1="46" x2="36" y2="46"/>
+        <path d="M48 20 A 24 24 0 0 1 48 44" stroke-dasharray="4 4" stroke-width="2.5"/>
+        <polyline points="48 48 48 42 42 45"/>
+      </svg>
+    </div>
+    <div style="font-family:'Comfortaa', cursive; font-weight:700; font-size:1.2rem; margin-bottom:6px;">Поверни экран 🔄</div>
+    <div style="font-size:0.88rem; opacity:0.85;">Для пазлов нужен альбомный (горизонтальный) экран!</div>
+  </div>
+</div>
+
+<!-- Модалка победы без букв -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <div class="win-star-badge">⭐</div>
+    <div class="win-actions">
+      <!-- Желтая кнопка "Заново" -->
+      <button class="win-action-btn btn-retry" id="modalRetryBtn" aria-label="Заново" title="Заново">
+        <svg viewBox="0 0 24 24" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+      </button>
+      <!-- Зеленая кнопка "Дальше" -->
+      <button class="win-action-btn btn-next" id="modalNextBtn" aria-label="Дальше" title="Следующий пазл">
+        <svg viewBox="0 0 24 24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3" fill="var(--ink)" stroke="var(--ink)"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <a href="index.html" class="btn btn-icon" aria-label="В меню" title="В меню">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+
+    <div class="nav-group">
+      <button class="nav-btn" id="prevBtn">◀</button>
+      <div class="level-title" id="puzzleTitle">🚜 Самосвал (1/4)</div>
+      <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <button class="btn btn-icon" id="resetBtn" aria-label="Сброс" title="Собрать заново" style="background:#FFEAA7;">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="puzzle-arena">
+    <!-- Слева: Рамка сборки с силуэтом -->
+    <div class="target-frame" id="targetFrame">
+      <svg id="targetSvg" viewBox="0 0 460 300">
+        <!-- Силуэты и собранные части -->
+      </svg>
+    </div>
+
+    <!-- Справа: Лоток с деталями (3x2) -->
+    <div class="pieces-tray" id="piecesTray">
+      <!-- Слоты с кусочками -->
+    </div>
+  </div>
+</div>
+
+<script>
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+  pickup() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(480, this.ctx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.08);
+  }
+  snap() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(950, this.ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.32, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.14);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.14);
+  }
+  horn() {
+    this.init();
+    if (!this.ctx) return;
+    [0, 0.18].forEach(delay => {
+      const t = this.ctx.currentTime + delay;
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(311.13, t);
+      osc2.frequency.setValueAtTime(392.00, t);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc1.start(t);
+      osc2.start(t);
+      osc1.stop(t + 0.14);
+      osc2.stop(t + 0.14);
+    });
+  }
+  win() {
+    this.init();
+    this.horn();
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((f, i) => {
+      const t = this.ctx.currentTime + 0.4 + i * 0.08;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    });
+  }
+}
+const sfx = new SoundFX();
+
+function lockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+}
+window.addEventListener('load', lockLandscape);
+window.addEventListener('pointerdown', () => {
+  sfx.init();
+  lockLandscape();
+}, { once: true });
+
+function fireConfetti() {
+  const colors = ['#FF4757', '#FFA502', '#FFDD59', '#2ED573', '#1E90FF', '#9D4EDD'];
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    const s = 10 + Math.random() * 12;
+    c.style.width = s + 'px';
+    c.style.height = (s * (Math.random() > 0.5 ? 1 : 0.6)) + 'px';
+    c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+    c.style.left = cx + 'px';
+    c.style.top = cy + 'px';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random() * 260;
+    c.style.setProperty('--cx', `${Math.cos(angle) * dist}px`);
+    c.style.setProperty('--cy', `${Math.sin(angle) * dist}px`);
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2100);
+  }
+}
+
+// 4 КРАСИВЫХ ПАЗЛА ПО 6 ДЕТАЛЕЙ КАЖДЫЙ
+const PUZZLES = [
+  {
+    title: '🚜 Самосвал (1/4)',
+    pieces: [
+      {
+        id: 'p_sand',
+        name: 'Песок',
+        svg: `<g id="sand_el"><ellipse cx="140" cy="85" rx="72" ry="24" fill="#E4B363" stroke="#2B2140" stroke-width="4"/></g>`,
+        previewSvg: `<svg viewBox="65 60 150 50"><use href="#sand_el"/></svg>`
+      },
+      {
+        id: 'p_body',
+        name: 'Кузов',
+        svg: `<g id="body_el">
+          <polygon points="65,95 225,95 205,160 85,160" fill="#FFD23F" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/>
+          <line x1="120" y1="95" x2="115" y2="160" stroke="#2B2140" stroke-width="4"/>
+          <line x1="170" y1="95" x2="165" y2="160" stroke="#2B2140" stroke-width="4"/>
+        </g>`,
+        previewSvg: `<svg viewBox="60 90 170 75"><use href="#body_el"/></svg>`
+      },
+      {
+        id: 'p_cabin',
+        name: 'Кабина',
+        svg: `<g id="cabin_el">
+          <path d="M 235 160 L 235 65 Q 315 60 345 90 L 370 120 L 370 160 Z" fill="#FF793F" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/>
+        </g>`,
+        previewSvg: `<svg viewBox="230 60 145 105"><use href="#cabin_el"/></svg>`
+      },
+      {
+        id: 'p_glass',
+        name: 'Стекло',
+        svg: `<g id="glass_el">
+          <path d="M 260 75 L 325 75 L 350 115 L 260 115 Z" fill="#70A1FF" stroke="#2B2140" stroke-width="4"/>
+        </g>`,
+        previewSvg: `<svg viewBox="255 70 100 50"><use href="#glass_el"/></svg>`
+      },
+      {
+        id: 'p_light',
+        name: 'Фара и бампер',
+        svg: `<g id="light_el">
+          <rect x="360" y="130" width="16" height="20" rx="4" fill="#FFD23F" stroke="#2B2140" stroke-width="3.5"/>
+          <rect x="355" y="155" width="22" height="15" rx="3" fill="#CED6E0" stroke="#2B2140" stroke-width="3"/>
+        </g>`,
+        previewSvg: `<svg viewBox="350 125 30 50"><use href="#light_el"/></svg>`
+      },
+      {
+        id: 'p_wheels',
+        name: 'Колёса и рама',
+        svg: `<g id="wheels_el">
+          <rect x="70" y="155" width="295" height="20" rx="4" fill="#747D8C" stroke="#2B2140" stroke-width="4.5"/>
+          <circle cx="120" cy="190" r="38" fill="#2F3542" stroke="#2B2140" stroke-width="5"/>
+          <circle cx="120" cy="190" r="18" fill="#CED6E0" stroke="#2B2140" stroke-width="4"/>
+          <circle cx="205" cy="190" r="38" fill="#2F3542" stroke="#2B2140" stroke-width="5"/>
+          <circle cx="205" cy="190" r="18" fill="#CED6E0" stroke="#2B2140" stroke-width="4"/>
+          <circle cx="315" cy="190" r="38" fill="#2F3542" stroke="#2B2140" stroke-width="5"/>
+          <circle cx="315" cy="190" r="18" fill="#CED6E0" stroke="#2B2140" stroke-width="4"/>
+        </g>`,
+        previewSvg: `<svg viewBox="60 150 315 85"><use href="#wheels_el"/></svg>`
+      }
+    ]
+  },
+  {
+    title: '🚢 Пароход (2/4)',
+    pieces: [
+      {
+        id: 's_hull_bottom',
+        name: 'Низ корпуса',
+        svg: `<g id="shullb_el">
+          <path d="M 60 160 L 390 160 Q 410 160 375 205 Q 295 225 115 215 L 60 160 Z" fill="#FF4757" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/>
+        </g>`,
+        previewSvg: `<svg viewBox="50 155 360 75"><use href="#shullb_el"/></svg>`
+      },
+      {
+        id: 's_hull_top',
+        name: 'Палуба и окна',
+        svg: `<g id="shullt_el">
+          <rect x="65" y="140" width="330" height="20" fill="#FFFFFF" stroke="#2B2140" stroke-width="3.5"/>
+          <circle cx="130" cy="180" r="12" fill="#70A1FF" stroke="#2B2140" stroke-width="3.5"/>
+          <circle cx="200" cy="180" r="12" fill="#70A1FF" stroke="#2B2140" stroke-width="3.5"/>
+          <circle cx="270" cy="180" r="12" fill="#70A1FF" stroke="#2B2140" stroke-width="3.5"/>
+        </g>`,
+        previewSvg: `<svg viewBox="60 135 340 65"><use href="#shullt_el"/></svg>`
+      },
+      {
+        id: 's_cabin',
+        name: 'Белая рубка',
+        svg: `<g id="scabin_el">
+          <rect x="130" y="75" width="160" height="65" rx="8" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/>
+        </g>`,
+        previewSvg: `<svg viewBox="125 70 170 75"><use href="#scabin_el"/></svg>`
+      },
+      {
+        id: 's_windows',
+        name: 'Окна рубки',
+        svg: `<g id="swin_el">
+          <rect x="145" y="88" width="28" height="32" rx="4" fill="#70A1FF" stroke="#2B2140" stroke-width="3"/>
+          <rect x="195" y="88" width="28" height="32" rx="4" fill="#70A1FF" stroke="#2B2140" stroke-width="3"/>
+          <rect x="245" y="88" width="28" height="32" rx="4" fill="#70A1FF" stroke="#2B2140" stroke-width="3"/>
+        </g>`,
+        previewSvg: `<svg viewBox="140 82 140 45"><use href="#swin_el"/></svg>`
+      },
+      {
+        id: 's_chimney',
+        name: 'Труба и дым',
+        svg: `<g id="schim_el">
+          <polygon points="175,75 210,75 205,30 180,30" fill="#FFA502" stroke="#2B2140" stroke-width="4"/>
+          <rect x="175" y="24" width="35" height="10" rx="2" fill="#2B2140"/>
+          <circle cx="230" cy="38" r="14" fill="#FFFFFF" stroke="#2B2140" stroke-width="3"/>
+          <circle cx="260" cy="25" r="17" fill="#FFFFFF" stroke="#2B2140" stroke-width="3"/>
+          <circle cx="290" cy="20" r="12" fill="#FFFFFF" stroke="#2B2140" stroke-width="3"/>
+        </g>`,
+        previewSvg: `<svg viewBox="170 15 140 65"><use href="#schim_el"/></svg>`
+      },
+      {
+        id: 's_wave',
+        name: 'Волны',
+        svg: `<g id="swave_el">
+          <path d="M 40 215 Q 90 195 140 215 T 240 215 T 340 215 T 420 215 L 420 245 L 40 245 Z" fill="#1E90FF" stroke="#2B2140" stroke-width="4.5"/>
+        </g>`,
+        previewSvg: `<svg viewBox="35 195 390 55"><use href="#swave_el"/></svg>`
+      }
+    ]
+  },
+  {
+    title: '🚀 Ракета (3/4)',
+    pieces: [
+      {
+        id: 'r_nose',
+        name: 'Красный нос',
+        svg: `<g id="rnose_el">
+          <path d="M 230 35 Q 265 75 265 125 L 195 125 Q 195 75 230 35 Z" fill="#FF4757" stroke="#2B2140" stroke-width="5" stroke-linejoin="round"/>
+        </g>`,
+        previewSvg: `<svg viewBox="190 30 80 100"><use href="#rnose_el"/></svg>`
+      },
+      {
+        id: 'r_porthole',
+        name: 'Иллюминатор',
+        svg: `<g id="rport_el">
+          <circle cx="230" cy="95" r="18" fill="#70A1FF" stroke="#2B2140" stroke-width="4"/>
+          <circle cx="226" cy="91" r="5" fill="#FFFFFF"/>
+        </g>`,
+        previewSvg: `<svg viewBox="210 75 40 40"><use href="#rport_el"/></svg>`
+      },
+      {
+        id: 'r_body',
+        name: 'Белый корпус',
+        svg: `<g id="rbody_el">
+          <rect x="195" y="120" width="70" height="85" rx="6" fill="#FFFFFF" stroke="#2B2140" stroke-width="5"/>
+          <rect x="195" y="150" width="70" height="18" fill="#2ED573" stroke="#2B2140" stroke-width="3.5"/>
+        </g>`,
+        previewSvg: `<svg viewBox="190 115 80 95"><use href="#rbody_el"/></svg>`
+      },
+      {
+        id: 'r_wing_left',
+        name: 'Левое крыло',
+        svg: `<g id="rwl_el">
+          <polygon points="195,125 145,195 195,195" fill="#FFA502" stroke="#2B2140" stroke-width="4.5"/>
+        </g>`,
+        previewSvg: `<svg viewBox="140 120 60 80"><use href="#rwl_el"/></svg>`
+      },
+      {
+        id: 'r_wing_right',
+        name: 'Правое крыло',
+        svg: `<g id="rwr_el">
+          <polygon points="265,125 315,195 265,195" fill="#FFA502" stroke="#2B2140" stroke-width="4.5"/>
+        </g>`,
+        previewSvg: `<svg viewBox="260 120 60 80"><use href="#rwr_el"/></svg>`
+      },
+      {
+        id: 'r_fire',
+        name: 'Пламя двигателя',
+        svg: `<g id="rfire_el">
+          <polygon points="205,205 255,205 262,218 198,218" fill="#747D8C" stroke="#2B2140" stroke-width="3.5"/>
+          <polygon points="200,218 260,218 230,265" fill="#FF4757" stroke="#2B2140" stroke-width="4"/>
+          <polygon points="212,218 248,218 230,250" fill="#FFD23F" stroke="#2B2140" stroke-width="3"/>
+        </g>`,
+        previewSvg: `<svg viewBox="195 200 70 70"><use href="#rfire_el"/></svg>`
+      }
+    ]
+  },
+  {
+    title: '🚂 Весёлый паровоз (4/4)',
+    pieces: [
+      {
+        id: 't_cabin',
+        name: 'Синяя кабина',
+        svg: `<g id="tcabin_el">
+          <rect x="85" y="90" width="95" height="95" rx="6" fill="#1E90FF" stroke="#2B2140" stroke-width="5"/>
+          <rect x="105" y="105" width="55" height="45" rx="6" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/>
+        </g>`,
+        previewSvg: `<svg viewBox="80 85 105 105"><use href="#tcabin_el"/></svg>`
+      },
+      {
+        id: 't_roof',
+        name: 'Жёлтая крыша',
+        svg: `<g id="troof_el">
+          <rect x="75" y="75" width="115" height="18" rx="6" fill="#FFD23F" stroke="#2B2140" stroke-width="4"/>
+        </g>`,
+        previewSvg: `<svg viewBox="70 70 125 30"><use href="#troof_el"/></svg>`
+      },
+      {
+        id: 't_boiler',
+        name: 'Красный котёл',
+        svg: `<g id="tboiler_el">
+          <rect x="175" y="95" width="145" height="75" rx="10" fill="#FF4757" stroke="#2B2140" stroke-width="5"/>
+          <polygon points="320,115 345,108 345,145 320,138" fill="#FFD23F" stroke="#2B2140" stroke-width="4"/>
+        </g>`,
+        previewSvg: `<svg viewBox="170 90 180 85"><use href="#tboiler_el"/></svg>`
+      },
+      {
+        id: 't_chimney',
+        name: 'Труба с дымком',
+        svg: `<g id="tchim_el">
+          <polygon points="280,100 305,100 310,65 275,65" fill="#FFA502" stroke="#2B2140" stroke-width="4"/>
+          <circle cx="330" cy="50" r="14" fill="#FFFFFF" stroke="#2B2140" stroke-width="3"/>
+          <circle cx="360" cy="38" r="18" fill="#FFFFFF" stroke="#2B2140" stroke-width="3"/>
+        </g>`,
+        previewSvg: `<svg viewBox="270 25 115 80"><use href="#tchim_el"/></svg>`
+      },
+      {
+        id: 't_big_wheel',
+        name: 'Большое колесо',
+        svg: `<g id="tbw_el">
+          <circle cx="132" cy="205" r="42" fill="#2ED573" stroke="#2B2140" stroke-width="5"/>
+          <circle cx="132" cy="205" r="20" fill="#FFFFFF" stroke="#2B2140" stroke-width="4"/>
+          <circle cx="132" cy="205" r="7" fill="#2B2140"/>
+        </g>`,
+        previewSvg: `<svg viewBox="85 160 95 90"><use href="#tbw_el"/></svg>`
+      },
+      {
+        id: 't_small_wheels',
+        name: 'Маленькие колёса',
+        svg: `<g id="tsw_el">
+          <rect x="65" y="240" width="295" height="12" rx="3" fill="#747D8C" stroke="#2B2140" stroke-width="3"/>
+          <circle cx="230" cy="215" r="28" fill="#2ED573" stroke="#2B2140" stroke-width="4.5"/>
+          <circle cx="230" cy="215" r="14" fill="#FFFFFF" stroke="#2B2140" stroke-width="3.5"/>
+          <circle cx="295" cy="215" r="28" fill="#2ED573" stroke="#2B2140" stroke-width="4.5"/>
+          <circle cx="295" cy="215" r="14" fill="#FFFFFF" stroke="#2B2140" stroke-width="3.5"/>
+          <rect x="220" y="210" width="85" height="10" rx="4" fill="#FFD23F" stroke="#2B2140" stroke-width="3"/>
+        </g>`,
+        previewSvg: `<svg viewBox="60 185 305 75"><use href="#tsw_el"/></svg>`
+      }
+    ]
+  }
+];
+
+let curPuzzleIdx = 0;
+let placedCount = 0;
+
+const targetSvg = document.getElementById('targetSvg');
+const piecesTray = document.getElementById('piecesTray');
+const puzzleTitle = document.getElementById('puzzleTitle');
+const winOverlay = document.getElementById('winOverlay');
+
+function loadPuzzle(idx) {
+  curPuzzleIdx = (idx + PUZZLES.length) % PUZZLES.length;
+  const p = PUZZLES[curPuzzleIdx];
+  puzzleTitle.textContent = p.title;
+  placedCount = 0;
+  winOverlay.style.display = 'none';
+
+  targetSvg.innerHTML = '';
+  piecesTray.innerHTML = '';
+
+  // 1. Создаем силуэты и скрытые активные части в targetSvg
+  p.pieces.forEach(piece => {
+    const ghost = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    ghost.id = `ghost_${piece.id}`;
+    ghost.className.baseVal = 'slot-ghost';
+    ghost.innerHTML = piece.svg;
+    targetSvg.appendChild(ghost);
+
+    const active = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    active.id = `active_${piece.id}`;
+    active.className.baseVal = 'slot-active';
+    active.style.opacity = '0';
+    active.innerHTML = piece.svg;
+    targetSvg.appendChild(active);
+  });
+
+  // 2. Создаем 6 слотов в лотке справа
+  p.pieces.forEach(piece => {
+    const slot = document.createElement('div');
+    slot.className = 'piece-slot';
+
+    const pieceEl = document.createElement('div');
+    pieceEl.className = 'puzzle-piece';
+    pieceEl.id = `tray_${piece.id}`;
+    pieceEl.dataset.id = piece.id;
+    pieceEl.innerHTML = piece.previewSvg;
+
+    setupDrag(pieceEl, piece);
+
+    slot.appendChild(pieceEl);
+    piecesTray.appendChild(slot);
+  });
+}
+
+function setupDrag(pieceEl, piece) {
+  let isDragging = false;
+  let startX = 0, startY = 0;
+  let initialLeft = 0, initialTop = 0;
+
+  pieceEl.addEventListener('pointerdown', (e) => {
+    if (pieceEl.classList.contains('placed')) return;
+    e.preventDefault();
+    sfx.pickup();
+    isDragging = true;
+
+    pieceEl.classList.add('dragging');
+    pieceEl.setPointerCapture(e.pointerId);
+
+    const rect = pieceEl.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+
+    startX = e.clientX;
+    startY = e.clientY;
+
+    pieceEl.style.position = 'fixed';
+    pieceEl.style.left = `${initialLeft}px`;
+    pieceEl.style.top = `${initialTop}px`;
+    pieceEl.style.width = `${rect.width}px`;
+    pieceEl.style.height = `${rect.height}px`;
+  });
+
+  pieceEl.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    pieceEl.style.left = `${initialLeft + dx}px`;
+    pieceEl.style.top = `${initialTop + dy}px`;
+  });
+
+  function endDrag(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    pieceEl.classList.remove('dragging');
+
+    const targetRect = document.getElementById('targetFrame').getBoundingClientRect();
+    const pieceRect = pieceEl.getBoundingClientRect();
+    const pieceCenterX = pieceRect.left + pieceRect.width / 2;
+    const pieceCenterY = pieceRect.top + pieceRect.height / 2;
+
+    const insideTargetFrame = (
+      pieceCenterX > targetRect.left &&
+      pieceCenterX < targetRect.right &&
+      pieceCenterY > targetRect.top &&
+      pieceCenterY < targetRect.bottom
+    );
+
+    if (insideTargetFrame) {
+      sfx.snap();
+      pieceEl.classList.add('placed');
+      pieceEl.style.position = '';
+      pieceEl.style.left = '';
+      pieceEl.style.top = '';
+      pieceEl.style.width = '';
+      pieceEl.style.height = '';
+
+      const ghost = document.getElementById(`ghost_${piece.id}`);
+      const active = document.getElementById(`active_${piece.id}`);
+      if (ghost) ghost.style.display = 'none';
+      if (active) active.style.opacity = '1';
+
+      placedCount++;
+
+      // Проверка полной победы
+      if (placedCount === PUZZLES[curPuzzleIdx].pieces.length) {
+        setTimeout(() => {
+          sfx.win();
+          fireConfetti();
+          // Показываем окно победы без букв
+          setTimeout(() => {
+            winOverlay.style.display = 'flex';
+          }, 800);
+        }, 150);
+      }
+    } else {
+      pieceEl.style.position = '';
+      pieceEl.style.left = '';
+      pieceEl.style.top = '';
+      pieceEl.style.width = '';
+      pieceEl.style.height = '';
+    }
+  }
+
+  pieceEl.addEventListener('pointerup', endDrag);
+  pieceEl.addEventListener('pointercancel', endDrag);
+}
+
+// Кнопки модалки победы
+document.getElementById('modalRetryBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pickup();
+  loadPuzzle(curPuzzleIdx);
+});
+document.getElementById('modalNextBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pickup();
+  loadPuzzle(curPuzzleIdx + 1);
+});
+
+// Навигация верхней панели
+document.getElementById('prevBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pickup();
+  loadPuzzle(curPuzzleIdx - 1);
+});
+document.getElementById('nextBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pickup();
+  loadPuzzle(curPuzzleIdx + 1);
+});
+document.getElementById('resetBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pickup();
+  loadPuzzle(curPuzzleIdx);
+});
+
+// Старт
+loadPuzzle(0);
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
   "name": "Игры для детей",
   "launcherName": "Игры",
   "display": "fullscreen",
-  "orientation": "any",
+  "orientation": "landscape",
   "themeColor": "#080d1a",
   "themeColorDark": "#080d1a",
   "navigationColor": "#080d1a",

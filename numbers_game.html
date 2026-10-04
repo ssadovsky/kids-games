@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Цифры и Счёт</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-1:#6CD6B6;
+    --sky-2:#B4F0D8;
+    --ink:#2B2140;
+    --sun:#FFD23F;
+    --coral:#FF6B6B;
+    --blue:#4D96FF;
+    --yellow:#FFD93D;
+    --purple:#9D4EDD;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+  html,body{
+    width:100%; height:100%;
+    overflow:hidden;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg, #A8EDEA 0%, #FED6E3 100%);
+    touch-action:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  #app{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:center;
+    padding:calc(env(safe-area-inset-top, 6px) + 4px) 12px calc(env(safe-area-inset-bottom, 6px) + 6px);
+  }
+
+  /* Верхняя полоса управления */
+  .top-bar{
+    width:100%;
+    max-width:960px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    z-index:10;
+  }
+  .btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#FFFFFF;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    color:var(--ink);
+    box-shadow:0 3px 0 var(--ink);
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+  }
+  .btn:active{
+    transform:translateY(2px);
+    box-shadow:0 1px 0 var(--ink);
+  }
+  .btn-icon{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    padding:0;
+    text-decoration:none;
+    flex-shrink:0;
+  }
+  .btn-icon svg{ width:22px; height:22px; stroke:var(--ink); }
+
+  /* Режимы игры в виде сочных таблеток */
+  .modes-bar{
+    display:flex;
+    background:#FFFFFFD0;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    padding:2px;
+    box-shadow:0 3px 0 var(--ink);
+    gap:4px;
+  }
+  .mode-tab{
+    border:none;
+    background:transparent;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+    font-size:clamp(0.72rem, 2.2vmin, 0.95rem);
+    color:var(--ink);
+    padding:4px 12px;
+    border-radius:99px;
+    cursor:pointer;
+    transition:all .15s ease;
+    white-space:nowrap;
+  }
+  .mode-tab.active{
+    background:#FFD23F;
+    border:2px solid var(--ink);
+    box-shadow:0 2px 0 var(--ink);
+  }
+
+  /* Игровое поле */
+  .game-area{
+    position:relative;
+    flex:1;
+    width:100%;
+    max-width:880px;
+    background:#FFFFFFE8;
+    border:3.5px solid var(--ink);
+    border-radius:20px;
+    box-shadow:0 6px 0 var(--ink);
+    margin:4px 0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    min-height:0;
+  }
+
+  /* РЕЖИМ 1: Соедини по точкам */
+  #dotsView{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #dotsSvg{
+    width:100%;
+    height:100%;
+    overflow:visible;
+  }
+  .dot-circle{
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .dot-circle.target{
+    animation:pulse-dot 0.8s infinite alternate;
+  }
+  @keyframes pulse-dot{
+    from{ transform:scale(1); }
+    to{ transform:scale(1.28); }
+  }
+
+  /* РЕЖИМ 2: Посчитай предметы */
+  #countView{
+    display:none;
+    flex-direction:column;
+    width:100%;
+    height:100%;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 12px;
+  }
+  .items-container{
+    flex:1;
+    width:100%;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    align-content:center;
+    gap:clamp(8px, 2vmin, 16px);
+    overflow:hidden;
+  }
+  .count-item{
+    width:clamp(38px, 9vmin, 58px);
+    height:clamp(38px, 9vmin, 58px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:clamp(26px, 7vmin, 44px);
+    transition:transform .15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position:relative;
+  }
+  .count-item.counted{
+    transform:scale(1.15);
+  }
+  .count-badge{
+    position:absolute;
+    top:-6px; right:-6px;
+    background:#FF4757;
+    color:#fff;
+    border:2px solid var(--ink);
+    border-radius:50%;
+    width:22px; height:22px;
+    font-size:12px;
+    font-weight:900;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 2px 0 var(--ink);
+  }
+  .answer-cards{
+    display:flex;
+    gap:clamp(8px, 2.5vmin, 20px);
+    margin-bottom:4px;
+  }
+  .num-card{
+    background:#FFFFFF;
+    border:3px solid var(--ink);
+    border-radius:14px;
+    min-width:clamp(54px, 12vmin, 74px);
+    height:clamp(44px, 10vmin, 58px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Comfortaa', cursive;
+    font-size:clamp(1.4rem, 4.5vmin, 2rem);
+    font-weight:900;
+    box-shadow:0 4px 0 var(--ink);
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease, background .15s;
+  }
+  .num-card:active{
+    transform:translateY(3px);
+    box-shadow:0 1px 0 var(--ink);
+  }
+  .num-card.correct{
+    background:#2ED573 !important;
+    color:#fff;
+  }
+  .num-card.wrong{
+    background:#FF6B6B !important;
+    color:#fff;
+    animation:shake .3s ease;
+  }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    25%{ transform:translateX(-6px); }
+    75%{ transform:translateX(6px); }
+  }
+
+  /* РЕЖИМ 3: Где больше? */
+  #compareView{
+    display:none;
+    width:100%;
+    height:100%;
+    align-items:center;
+    justify-content:space-around;
+    padding:8px 16px;
+  }
+  .compare-plate{
+    flex:1;
+    max-width:280px;
+    height:82%;
+    background:#FFF8E7;
+    border:3.5px solid var(--ink);
+    border-radius:20px;
+    box-shadow:0 5px 0 var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px;
+    cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .compare-plate:active{
+    transform:translateY(3px);
+    box-shadow:0 2px 0 var(--ink);
+  }
+  .plate-items{
+    flex:1;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    align-content:center;
+    gap:6px;
+    width:100%;
+  }
+  .plate-num{
+    font-family:'Comfortaa', cursive;
+    font-weight:900;
+    font-size:clamp(1.8rem, 5vmin, 2.5rem);
+    background:#FFFFFF;
+    border:3px solid var(--ink);
+    border-radius:12px;
+    padding:2px 18px;
+    box-shadow:0 3px 0 var(--ink);
+  }
+  .vs-sign{
+    font-family:'Comfortaa', cursive;
+    font-size:clamp(1.4rem, 4vmin, 2rem);
+    font-weight:900;
+    color:var(--coral);
+    text-shadow:0 2px 0 #fff;
+    padding:0 8px;
+  }
+
+  /* Салют конфетти */
+  .confetti{
+    position:absolute;
+    pointer-events:none;
+    z-index:9999;
+    animation:confetti-fly 1.8s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  }
+  @keyframes confetti-fly{
+    0%{ transform:translate(0, 0) scale(0.6) rotate(0); opacity:1; }
+    100%{ transform:translate(var(--cx), var(--cy)) scale(1.3) rotate(600deg); opacity:0; }
+  }
+
+  /* Поворот экрана */
+  .rotate-prompt{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(43,33,64,0.94);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    color:#FFFFFF;
+    text-align:center;
+  }
+  @media screen and (orientation: portrait){
+    .rotate-prompt{ display:flex; }
+  }
+  .rotate-card{
+    background:#FFFFFF;
+    color:var(--ink);
+    border:4px solid var(--ink);
+    border-radius:22px;
+    padding:20px 24px;
+    max-width:300px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+  }
+  .rotate-icon{
+    width:56px;
+    height:56px;
+    color:#FFD23F;
+    margin-bottom:10px;
+    animation:phone-rotate 2.2s ease-in-out infinite;
+  }
+  .rotate-icon svg{ width:100%; height:100%; }
+  @keyframes phone-rotate{
+    0%,20%{ transform:rotate(0deg); }
+    50%,70%{ transform:rotate(-90deg); }
+    90%,100%{ transform:rotate(0deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="rotate-prompt">
+  <div class="rotate-card">
+    <div class="rotate-icon">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="18" y="10" width="28" height="44" rx="4"/>
+        <line x1="28" y1="46" x2="36" y2="46"/>
+        <path d="M48 20 A 24 24 0 0 1 48 44" stroke-dasharray="4 4" stroke-width="2.5"/>
+        <polyline points="48 48 48 42 42 45"/>
+      </svg>
+    </div>
+    <div style="font-family:'Comfortaa', cursive; font-weight:700; font-size:1.2rem; margin-bottom:6px;">Поверни телефон 🔄</div>
+    <div style="font-size:0.88rem; opacity:0.85;">Для игры нужен альбомный (горизонтальный) экран!</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <a href="index.html" class="btn btn-icon" aria-label="В меню" title="В меню">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+
+    <div class="modes-bar">
+      <button class="mode-tab active" data-mode="dots">🌟 Соедини 20–40</button>
+      <button class="mode-tab" data-mode="count">🍎 Посчитай</button>
+      <button class="mode-tab" data-mode="compare">⚖️ Где больше?</button>
+    </div>
+
+    <button class="btn btn-icon" id="nextLevelBtn" aria-label="Дальше" title="Следующий уровень" style="background:#FFD23F;">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="game-area">
+    <!-- Режим 1: Соединялка по точкам -->
+    <div id="dotsView">
+      <svg id="dotsSvg" viewBox="0 0 540 280">
+        <!-- Контур и точки строятся JS -->
+      </svg>
+      <div id="figureBadge" style="display:none; position:absolute; bottom:10px; background:#FFFFFFEE; border:3px solid var(--ink); border-radius:99px; padding:6px 18px; font-family:'Comfortaa', cursive; font-weight:700; font-size:1.05rem; box-shadow:0 3px 0 var(--ink); z-index:5; align-items:center; gap:10px;">
+        <span id="figureName">⭐ Звёздочка!</span>
+        <button id="nextFigureBtn" class="btn" style="padding:4px 14px; font-size:0.88rem; background:#FFD23F;">Дальше ▶</button>
+      </div>
+    </div>
+
+    <!-- Режим 2: Счёт предметов -->
+    <div id="countView">
+      <div style="font-family:'Comfortaa', cursive; font-weight:700; font-size:clamp(0.9rem, 2.5vmin, 1.2rem);">
+        Нажимай и считай предметы! 👇
+      </div>
+      <div class="items-container" id="itemsWrap"></div>
+      <div class="answer-cards" id="answersWrap"></div>
+    </div>
+
+    <!-- Режим 3: Где больше предметов -->
+    <div id="compareView">
+      <div class="compare-plate" id="plateLeft">
+        <div class="plate-items" id="plateItemsLeft"></div>
+        <div class="plate-num" id="plateNumLeft">12</div>
+      </div>
+      <div class="vs-sign">КТО<br>БОЛЬШЕ?</div>
+      <div class="compare-plate" id="plateRight">
+        <div class="plate-items" id="plateItemsRight"></div>
+        <div class="plate-num" id="plateNumRight">8</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Web Audio звуки
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+  note(num) {
+    this.init();
+    if (!this.ctx) return;
+    const baseFreq = 220; // A3
+    // Пентатоника / гамма по номеру шага
+    const scale = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24, 26, 28, 31, 33, 36];
+    const semitones = scale[(num - 1) % scale.length];
+    const freq = baseFreq * Math.pow(2, semitones / 12);
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    gain.gain.setValueAtTime(0.32, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.3);
+  }
+  win() {
+    this.init();
+    if (!this.ctx) return;
+    const notes = [392, 523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((f, i) => {
+      const t = this.ctx.currentTime + i * 0.08;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.35);
+    });
+  }
+  wrong() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.2);
+  }
+}
+const sfx = new SoundFX();
+
+// Голосовая озвучка чисел (приятный женский голос)
+let russianFemaleVoice = null;
+function loadRussianVoices() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  // Ищем русский женский голос
+  russianFemaleVoice = voices.find(v => v.lang.startsWith('ru') && (
+    v.name.toLowerCase().includes('milena') ||
+    v.name.toLowerCase().includes('tatyana') ||
+    v.name.toLowerCase().includes('katya') ||
+    v.name.toLowerCase().includes('irina') ||
+    v.name.toLowerCase().includes('female') ||
+    v.name.toLowerCase().includes('google русский') ||
+    v.name.toLowerCase().includes('yandex')
+  )) || voices.find(v => v.lang.startsWith('ru'));
+}
+if ('speechSynthesis' in window) {
+  loadRussianVoices();
+  window.speechSynthesis.onvoiceschanged = loadRussianVoices;
+}
+
+function speakNumber(num) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel(); // сброс очереди
+    const utterance = new SpeechSynthesisUtterance(String(num));
+    utterance.lang = 'ru-RU';
+    if (russianFemaleVoice) {
+      utterance.voice = russianFemaleVoice;
+    }
+    // Приятный, чуть приподнятый женственный тембр
+    utterance.pitch = 1.18;
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+  } catch (err) {}
+}
+
+function lockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+}
+window.addEventListener('load', lockLandscape);
+window.addEventListener('pointerdown', () => {
+  sfx.init();
+  lockLandscape();
+  loadRussianVoices();
+}, { once: true });
+
+function fireConfetti() {
+  sfx.win();
+  const colors = ['#FF4757', '#FFA502', '#FFDD59', '#2ED573', '#1E90FF', '#9D4EDD'];
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  for (let i = 0; i < 35; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    const s = 10 + Math.random() * 12;
+    c.style.width = s + 'px';
+    c.style.height = (s * (Math.random() > 0.5 ? 1 : 0.6)) + 'px';
+    c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+    c.style.left = cx + 'px';
+    c.style.top = cy + 'px';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random() * 220;
+    c.style.setProperty('--cx', `${Math.cos(angle) * dist}px`);
+    c.style.setProperty('--cy', `${Math.sin(angle) * dist}px`);
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 1900);
+  }
+}
+
+// -------------------------------------------------------------
+// РЕЖИМ 1: СОЕДИНИ ТОЧКИ ОТ 20 ДО 40
+// -------------------------------------------------------------
+const DOT_FIGURES = [
+  {
+    name: 'Звёздочка',
+    icon: '⭐',
+    color: '#FFD23F',
+    // 20 точек: счёт от 20 до 39! Идеальная 10-лучевая звезда, расстояние между соседями ~65px
+    points: [
+      {x: 270, y: 22},  // 20 (верхний луч)
+      {x: 288, y: 85},  // 21
+      {x: 339, y: 45},  // 22
+      {x: 317, y: 106}, // 23
+      {x: 382, y: 104}, // 24
+      {x: 328, y: 140}, // 25
+      {x: 382, y: 176}, // 26
+      {x: 317, y: 174}, // 27
+      {x: 339, y: 235}, // 28
+      {x: 288, y: 195}, // 29
+      {x: 270, y: 258}, // 30 (нижний луч)
+      {x: 252, y: 195}, // 31
+      {x: 201, y: 235}, // 32
+      {x: 223, y: 174}, // 33
+      {x: 158, y: 176}, // 34
+      {x: 212, y: 140}, // 35
+      {x: 158, y: 104}, // 36
+      {x: 223, y: 106}, // 37
+      {x: 201, y: 45},  // 38
+      {x: 252, y: 85}   // 39
+    ]
+  },
+  {
+    name: 'Ракета',
+    icon: '🚀',
+    color: '#4D96FF',
+    // 18 точек: счёт от 20 до 37, расстояния 55-90px
+    points: [
+      {x: 270, y: 24},  // 20 (верхушка)
+      {x: 330, y: 74},  // 21
+      {x: 360, y: 140}, // 22
+      {x: 360, y: 200}, // 23
+      {x: 450, y: 235}, // 24 (крыло право)
+      {x: 405, y: 265}, // 25
+      {x: 345, y: 235}, // 26
+      {x: 310, y: 235}, // 27
+      {x: 290, y: 268}, // 28 (огонь)
+      {x: 270, y: 245}, // 29
+      {x: 250, y: 268}, // 30 (огонь)
+      {x: 230, y: 235}, // 31
+      {x: 195, y: 235}, // 32
+      {x: 135, y: 265}, // 33
+      {x: 90, y: 235},  // 34 (крыло лево)
+      {x: 180, y: 200}, // 35
+      {x: 180, y: 140}, // 36
+      {x: 210, y: 74}   // 37
+    ]
+  },
+  {
+    name: 'Кораблик',
+    icon: '⛵',
+    color: '#00C897',
+    // 17 точек: счёт от 20 до 36, расстояния 55-100px
+    points: [
+      {x: 270, y: 32},  // 20 (парус верхушка)
+      {x: 370, y: 95},  // 21
+      {x: 440, y: 158}, // 22 (парус право низ)
+      {x: 350, y: 158}, // 23
+      {x: 280, y: 158}, // 24
+      {x: 460, y: 170}, // 25 (палуба нос)
+      {x: 505, y: 215}, // 26 (нос острие)
+      {x: 430, y: 255}, // 27 (дно право)
+      {x: 350, y: 255}, // 28
+      {x: 270, y: 255}, // 29
+      {x: 190, y: 255}, // 30
+      {x: 110, y: 255}, // 31 (дно лево)
+      {x: 55, y: 215},  // 32 (корма острие)
+      {x: 80, y: 170},  // 33 (корма палуба)
+      {x: 260, y: 170}, // 34
+      {x: 120, y: 158}, // 35 (парус лево низ)
+      {x: 185, y: 95}   // 36
+    ]
+  },
+  {
+    name: 'Грузовичок',
+    icon: '🚚',
+    color: '#FF6B6B',
+    // 17 точек: счёт от 20 до 36, расстояния 50-90px
+    points: [
+      {x: 60, y: 220},  // 20 (передний бампер)
+      {x: 60, y: 155},  // 21 (капот)
+      {x: 140, y: 155}, // 22
+      {x: 190, y: 80},  // 23 (лобовое стекло)
+      {x: 260, y: 80},  // 24 (крыша кабины)
+      {x: 260, y: 45},  // 25 (кузов верх лево)
+      {x: 370, y: 45},  // 26
+      {x: 480, y: 45},  // 27 (кузов верх право)
+      {x: 480, y: 140}, // 28
+      {x: 480, y: 220}, // 29 (задний бампер)
+      {x: 420, y: 220}, // 30
+      {x: 380, y: 175}, // 31 (заднее колесо)
+      {x: 320, y: 175}, // 32
+      {x: 280, y: 220}, // 33
+      {x: 200, y: 220}, // 34
+      {x: 160, y: 175}, // 35 (переднее колесо)
+      {x: 100, y: 175}  // 36
+    ]
+  }
+];
+
+let curFigureIdx = 0;
+const BASE_NUM = 20;
+let nextExpectedDot = BASE_NUM;
+let dotsAutoTimer = null;
+const dotsSvg = document.getElementById('dotsSvg');
+const figureBadge = document.getElementById('figureBadge');
+const figureName = document.getElementById('figureName');
+const nextFigureBtn = document.getElementById('nextFigureBtn');
+
+if (nextFigureBtn) {
+  nextFigureBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (dotsAutoTimer) clearTimeout(dotsAutoTimer);
+    curFigureIdx = (curFigureIdx + 1) % DOT_FIGURES.length;
+    renderDotsFigure();
+  });
+}
+
+function renderDotsFigure() {
+  if (dotsAutoTimer) clearTimeout(dotsAutoTimer);
+  nextExpectedDot = BASE_NUM;
+  dotsSvg.innerHTML = '';
+  if (figureBadge) figureBadge.style.display = 'none';
+
+  const fig = DOT_FIGURES[curFigureIdx];
+  const pts = fig.points;
+
+  // Группа линий
+  const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  linesGroup.id = 'drawnLines';
+  dotsSvg.appendChild(linesGroup);
+
+  // Финальный полигон фигуры
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.id = 'finalShape';
+  poly.setAttribute('points', pts.map(p => `${p.x},${p.y}`).join(' '));
+  poly.setAttribute('fill', fig.color);
+  poly.setAttribute('stroke', '#2B2140');
+  poly.setAttribute('stroke-width', '4.5');
+  poly.setAttribute('stroke-linejoin', 'round');
+  poly.style.opacity = '0';
+  poly.style.transition = 'opacity 0.7s ease, transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+  dotsSvg.appendChild(poly);
+
+  // Группа кружочков с цифрами
+  const dotsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  dotsGroup.id = 'dotsGroup';
+  dotsGroup.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  dotsSvg.appendChild(dotsGroup);
+
+  // Точки с числами от 20 до 40 (компактные кружки r=14, чистый читаемый шрифт)
+  pts.forEach((pt, i) => {
+    const num = BASE_NUM + i;
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
+    g.style.cursor = 'pointer';
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('r', '14');
+    circle.setAttribute('fill', num === BASE_NUM ? '#FFD23F' : '#FFFFFF');
+    circle.setAttribute('stroke', '#2B2140');
+    circle.setAttribute('stroke-width', '2.8');
+    circle.classList.add('dot-circle');
+    if (num === BASE_NUM) circle.classList.add('target');
+    circle.id = `dot-${num}`;
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.setAttribute('font-family', 'Comfortaa, sans-serif');
+    text.setAttribute('font-weight', '900');
+    text.setAttribute('font-size', '12');
+    text.setAttribute('fill', '#2B2140');
+    text.textContent = num;
+
+    g.appendChild(circle);
+    g.appendChild(text);
+
+    g.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      handleDotClick(num, pt);
+    });
+
+    dotsGroup.appendChild(g);
+  });
+}
+
+function handleDotClick(num, pt) {
+  if (num === nextExpectedDot) {
+    sfx.note(num - BASE_NUM + 1);
+    // Небольшая задержка чтобы Speech API успело разблокироваться после первого тапа
+    setTimeout(() => speakNumber(num), 80);
+
+    const prevDot = document.getElementById(`dot-${num}`);
+    if (prevDot) {
+      prevDot.setAttribute('fill', '#2ED573');
+      prevDot.classList.remove('target');
+    }
+
+    // Соединяем линией с предыдущей точкой
+    if (num > BASE_NUM) {
+      const fig = DOT_FIGURES[curFigureIdx];
+      const prevPt = fig.points[num - BASE_NUM - 1];
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', prevPt.x);
+      line.setAttribute('y1', prevPt.y);
+      line.setAttribute('x2', pt.x);
+      line.setAttribute('y2', pt.y);
+      line.setAttribute('stroke', '#2B2140');
+      line.setAttribute('stroke-width', '4.5');
+      line.setAttribute('stroke-linecap', 'round');
+      document.getElementById('drawnLines').appendChild(line);
+    }
+
+    nextExpectedDot++;
+    const fig = DOT_FIGURES[curFigureIdx];
+    const maxDot = BASE_NUM + fig.points.length - 1;
+
+    if (nextExpectedDot <= maxDot) {
+      const nextCircle = document.getElementById(`dot-${nextExpectedDot}`);
+      if (nextCircle) {
+        nextCircle.setAttribute('fill', '#FFD23F');
+        nextCircle.classList.add('target');
+      }
+    } else {
+      // Замкнуть контур и успешная сборка!
+      const firstPt = fig.points[0];
+      const lastPt = pt;
+      const closingLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      closingLine.setAttribute('x1', lastPt.x);
+      closingLine.setAttribute('y1', lastPt.y);
+      closingLine.setAttribute('x2', firstPt.x);
+      closingLine.setAttribute('y2', firstPt.y);
+      closingLine.setAttribute('stroke', '#2B2140');
+      closingLine.setAttribute('stroke-width', '4.5');
+      closingLine.setAttribute('stroke-linecap', 'round');
+      document.getElementById('drawnLines').appendChild(closingLine);
+
+      // Полностью убираем кружочки с цифрами, чтобы остался чистый красивый рисунок!
+      const dg = document.getElementById('dotsGroup');
+      if (dg) {
+        dg.style.opacity = '0';
+        dg.style.transform = 'scale(0.96)';
+        dg.style.pointerEvents = 'none';
+      }
+
+      // Проявляем готовую раскрашенную фигуру
+      const finalShape = document.getElementById('finalShape');
+      if (finalShape) {
+        finalShape.style.opacity = '1';
+      }
+
+      // Показываем бейдж с названием фигуры
+      if (figureBadge && figureName) {
+        figureName.textContent = `${fig.icon} ${fig.name}!`;
+        figureBadge.style.display = 'flex';
+      }
+
+      fireConfetti();
+
+      // Автопереход к следующей фигуре через 3.5 секунды
+      dotsAutoTimer = setTimeout(() => {
+        curFigureIdx = (curFigureIdx + 1) % DOT_FIGURES.length;
+        renderDotsFigure();
+      }, 3500);
+    }
+  } else {
+    sfx.wrong();
+  }
+}
+
+// -------------------------------------------------------------
+// РЕЖИМ 2: СЧЁТ ПРЕДМЕТОВ ОТ 1
+// -------------------------------------------------------------
+const EMOJIS = ['🚗', '🚀', '⭐', '🍎', '⚽', '🚜', '🦖', '🎈', '🍓', '🚁'];
+let currentFinalNum = 5;
+let currentTapNum = 0;
+
+function setupCountGame() {
+  const itemsWrap = document.getElementById('itemsWrap');
+  const answersWrap = document.getElementById('answersWrap');
+  itemsWrap.innerHTML = '';
+  answersWrap.innerHTML = '';
+  currentTapNum = 0;
+
+  // Количество предметов для счёта от 3 до 10
+  currentFinalNum = Math.floor(Math.random() * 8) + 3;
+  const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+
+  for (let i = 1; i <= currentFinalNum; i++) {
+    const item = document.createElement('div');
+    item.className = 'count-item';
+    item.textContent = emoji;
+    item.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!item.classList.contains('counted')) {
+        currentTapNum++;
+        item.classList.add('counted');
+        sfx.note(currentTapNum);
+        const badge = document.createElement('div');
+        badge.className = 'count-badge';
+        badge.textContent = currentTapNum;
+        item.appendChild(badge);
+      }
+    });
+    itemsWrap.appendChild(item);
+  }
+
+  // 3 карточки с ответами вокруг правильного числа (от 1 до 12)
+  const options = new Set([currentFinalNum]);
+  while (options.size < 3) {
+    const diff = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 2) + 1);
+    const fake = currentFinalNum + diff;
+    if (fake >= 1 && fake <= 12) options.add(fake);
+  }
+  const shuffled = Array.from(options).sort(() => Math.random() - 0.5);
+
+  shuffled.forEach(ans => {
+    const card = document.createElement('button');
+    card.className = 'num-card';
+    card.textContent = ans;
+    card.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (ans === currentFinalNum) {
+        card.classList.add('correct');
+        fireConfetti();
+        setTimeout(() => setupCountGame(), 1600);
+      } else {
+        card.classList.add('wrong');
+        sfx.wrong();
+        setTimeout(() => card.classList.remove('wrong'), 400);
+      }
+    });
+    answersWrap.appendChild(card);
+  });
+}
+
+// -------------------------------------------------------------
+// РЕЖИМ 3: ГДЕ БОЛЬШЕ? (СРАВНЕНИЕ ЧИСЕЛ ОТ 1 ДО 10)
+// -------------------------------------------------------------
+let compareLeftNum = 4;
+let compareRightNum = 7;
+
+function setupCompareGame() {
+  const plateItemsLeft = document.getElementById('plateItemsLeft');
+  const plateItemsRight = document.getElementById('plateItemsRight');
+  plateItemsLeft.innerHTML = '';
+  plateItemsRight.innerHTML = '';
+
+  // Генерируем два разных числа от 1 до 10
+  compareLeftNum = Math.floor(Math.random() * 9) + 1;
+  do {
+    compareRightNum = Math.floor(Math.random() * 9) + 1;
+  } while (compareLeftNum === compareRightNum);
+
+  document.getElementById('plateNumLeft').textContent = compareLeftNum;
+  document.getElementById('plateNumRight').textContent = compareRightNum;
+
+  const emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+
+  // Показываем ровно столько предметов, сколько написано на тарелке
+  for (let i = 0; i < compareLeftNum; i++) {
+    const d = document.createElement('span');
+    d.style.fontSize = 'clamp(18px, 4.5vmin, 28px)';
+    d.textContent = emoji;
+    plateItemsLeft.appendChild(d);
+  }
+  for (let i = 0; i < compareRightNum; i++) {
+    const d = document.createElement('span');
+    d.style.fontSize = 'clamp(18px, 4.5vmin, 28px)';
+    d.textContent = emoji;
+    plateItemsRight.appendChild(d);
+  }
+}
+
+document.getElementById('plateLeft').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (compareLeftNum > compareRightNum) {
+    fireConfetti();
+    setTimeout(() => setupCompareGame(), 1500);
+  } else {
+    sfx.wrong();
+  }
+});
+
+document.getElementById('plateRight').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (compareRightNum > compareLeftNum) {
+    fireConfetti();
+    setTimeout(() => setupCompareGame(), 1500);
+  } else {
+    sfx.wrong();
+  }
+});
+
+// Переключение табов
+const tabs = document.querySelectorAll('.mode-tab');
+const dotsView = document.getElementById('dotsView');
+const countView = document.getElementById('countView');
+const compareView = document.getElementById('compareView');
+
+tabs.forEach(tab => {
+  tab.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    sfx.init();
+    sfx.note(1);
+
+    const mode = tab.dataset.mode;
+    dotsView.style.display = mode === 'dots' ? 'flex' : 'none';
+    countView.style.display = mode === 'count' ? 'flex' : 'none';
+    compareView.style.display = mode === 'compare' ? 'flex' : 'none';
+
+    if (mode === 'dots') renderDotsFigure();
+    if (mode === 'count') setupCountGame();
+    if (mode === 'compare') setupCompareGame();
+  });
+});
+
+// Кнопка следующего уровня
+document.getElementById('nextLevelBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.init();
+  const activeTab = document.querySelector('.mode-tab.active').dataset.mode;
+  if (activeTab === 'dots') {
+    curFigureIdx = (curFigureIdx + 1) % DOT_FIGURES.length;
+    renderDotsFigure();
+  } else if (activeTab === 'count') {
+    setupCountGame();
+  } else {
+    setupCompareGame();
+  }
+});
+
+// Старт первого экрана
+renderDotsFigure();
+</script>
+</body>
+</html>

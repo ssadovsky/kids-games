@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Детское Пианино</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2B2140;
+    --sky-1:#A8EDEA;
+    --sky-2:#FED6E3;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+  html,body{
+    width:100%; height:100%;
+    overflow:hidden;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg, #A8EDEA 0%, #FED6E3 100%);
+    touch-action:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  #app{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:calc(env(safe-area-inset-top, 6px) + 4px) 10px calc(env(safe-area-inset-bottom, 6px) + 6px);
+  }
+
+  /* Верхняя панель управления */
+  .top-bar{
+    width:100%;
+    max-width:960px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    z-index:10;
+  }
+  .btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#FFFFFF;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    color:var(--ink);
+    box-shadow:0 3px 0 var(--ink);
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+  }
+  .btn:active{
+    transform:translateY(2px);
+    box-shadow:0 1px 0 var(--ink);
+  }
+  .btn-icon{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    padding:0;
+    text-decoration:none;
+    flex-shrink:0;
+  }
+  .btn-icon svg{ width:22px; height:22px; stroke:var(--ink); }
+
+  /* Переключатель инструментов (тембров) */
+  .instruments-bar{
+    display:flex;
+    background:#FFFFFFE0;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    padding:2px 4px;
+    box-shadow:0 3px 0 var(--ink);
+    gap:3px;
+  }
+  .inst-btn{
+    border:none;
+    background:transparent;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+    font-size:clamp(0.72rem, 2vmin, 0.92rem);
+    color:var(--ink);
+    padding:4px 10px;
+    border-radius:99px;
+    cursor:pointer;
+    transition:all .15s ease;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    white-space:nowrap;
+  }
+  .inst-btn.active{
+    background:#FFD23F;
+    border:2px solid var(--ink);
+    box-shadow:0 2px 0 var(--ink);
+    transform:scale(1.04);
+  }
+
+  /* Панель выбора песенок */
+  .song-panel{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:#FFFFFFD0;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    padding:2px 8px;
+    box-shadow:0 3px 0 var(--ink);
+  }
+  .song-select{
+    border:none;
+    background:transparent;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+    font-size:clamp(0.72rem, 2vmin, 0.92rem);
+    color:var(--ink);
+    outline:none;
+    cursor:pointer;
+  }
+
+  /* Область подсказок и нот для караоке */
+  .song-hint-box{
+    width:100%;
+    max-width:960px;
+    margin:2px auto;
+    height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    pointer-events:none;
+  }
+  .song-bubble{
+    background:#FFFFFFEE;
+    border:2.5px solid var(--ink);
+    border-radius:99px;
+    padding:4px 18px;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+    font-size:clamp(0.82rem, 2.4vmin, 1.05rem);
+    box-shadow:0 3px 0 var(--ink);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    animation:pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes pop-in{
+    from{ transform:scale(0.8); opacity:0; }
+    to{ transform:scale(1); opacity:1; }
+  }
+
+  /* КЛАВИАТУРА ПИАНИНО */
+  .piano-keyboard{
+    flex:1;
+    width:100%;
+    max-width:960px;
+    margin:0 auto;
+    display:flex;
+    gap:clamp(4px, 1vmin, 8px);
+    padding:4px 0 0;
+    min-height:0;
+    align-items:stretch;
+  }
+
+  /* Цветные радужные клавиши */
+  .key{
+    flex:1;
+    border:3.5px solid var(--ink);
+    border-radius:18px 18px 24px 24px;
+    box-shadow:0 8px 0 var(--ink);
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:center;
+    padding:14px 4px 16px;
+    position:relative;
+    transition:transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s;
+    user-select:none;
+    touch-action:none;
+  }
+  .key:active, .key.pressed{
+    transform:translateY(6px);
+    box-shadow:0 2px 0 var(--ink);
+    filter:brightness(1.15);
+  }
+
+  /* Подсветка подсказки для песенки */
+  .key.target-key{
+    animation:key-pulse 0.75s infinite alternate ease-in-out;
+  }
+  @keyframes key-pulse{
+    from{
+      filter:brightness(1);
+      box-shadow:0 8px 0 var(--ink);
+    }
+    to{
+      filter:brightness(1.3) drop-shadow(0 0 14px rgba(255,210,63,0.9));
+      box-shadow:0 8px 0 var(--ink), 0 0 20px #FFD23F;
+    }
+  }
+
+  .key-top-icon{
+    font-size:clamp(20px, 5vmin, 36px);
+    pointer-events:none;
+    transition:transform 0.15s ease;
+  }
+  .key.pressed .key-top-icon{
+    transform:scale(1.3) rotate(8deg);
+  }
+
+  .key-badge{
+    background:#FFFFFFE8;
+    border:2.5px solid var(--ink);
+    border-radius:50%;
+    width:clamp(32px, 7vmin, 46px);
+    height:clamp(32px, 7vmin, 46px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Comfortaa', cursive;
+    font-weight:900;
+    font-size:clamp(0.78rem, 2.4vmin, 1.15rem);
+    color:var(--ink);
+    box-shadow:0 2px 0 var(--ink);
+    pointer-events:none;
+  }
+  .key-note-name{
+    font-family:'Comfortaa', cursive;
+    font-weight:900;
+    font-size:clamp(0.85rem, 2.6vmin, 1.25rem);
+    color:#FFFFFF;
+    text-shadow:0 2px 4px rgba(0,0,0,0.5), 0 0 2px #2B2140;
+    pointer-events:none;
+  }
+
+  /* Вылетающие нотки при тапе */
+  .note-spark{
+    position:fixed;
+    pointer-events:none;
+    font-size:clamp(24px, 6vmin, 38px);
+    z-index:999;
+    animation:fly-spark 0.9s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  }
+  @keyframes fly-spark{
+    0%{ opacity:1; transform:translate(-50%, 0) scale(0.6) rotate(0deg); }
+    50%{ opacity:1; transform:translate(-50%, -70px) scale(1.3) rotate(20deg); }
+    100%{ opacity:0; transform:translate(-50%, -130px) scale(1) rotate(-15deg); }
+  }
+
+  /* Конфетти для победы в песенке */
+  .confetti{
+    position:fixed;
+    pointer-events:none;
+    z-index:9999;
+    animation:confetti-burst 1.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+  @keyframes confetti-burst{
+    0%{ transform:translate(0, 0) scale(1); opacity:1; }
+    80%{ opacity:1; }
+    100%{ transform:translate(var(--cx), var(--cy)) rotate(720deg) scale(0.4); opacity:0; }
+  }
+
+  /* Экран поворота устройства */
+  .rotate-prompt{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(43,33,64,0.94);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    color:#FFFFFF;
+    text-align:center;
+  }
+  @media screen and (orientation: portrait){
+    .rotate-prompt{ display:flex; }
+  }
+  .rotate-card{
+    background:#FFFFFF;
+    color:var(--ink);
+    border:4px solid var(--ink);
+    border-radius:22px;
+    padding:20px 24px;
+    max-width:300px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+  }
+  .rotate-icon{
+    width:56px;
+    height:56px;
+    color:#FFD23F;
+    margin-bottom:10px;
+    animation:phone-rotate 2.2s ease-in-out infinite;
+  }
+  .rotate-icon svg{ width:100%; height:100%; }
+  @keyframes phone-rotate{
+    0%,20%{ transform:rotate(0deg); }
+    50%,70%{ transform:rotate(-90deg); }
+    90%,100%{ transform:rotate(0deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="rotate-prompt">
+  <div class="rotate-card">
+    <div class="rotate-icon">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="18" y="10" width="28" height="44" rx="4"/>
+        <line x1="28" y1="46" x2="36" y2="46"/>
+        <path d="M48 20 A 24 24 0 0 1 48 44" stroke-dasharray="4 4" stroke-width="2.5"/>
+        <polyline points="48 48 48 42 42 45"/>
+      </svg>
+    </div>
+    <div style="font-family:'Comfortaa', cursive; font-weight:700; font-size:1.2rem; margin-bottom:6px;">Поверни пианино 🔄</div>
+    <div style="font-size:0.88rem; opacity:0.85;">Для игры нужен широкий горизонтальный экран!</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top-bar">
+    <a href="index.html" class="btn btn-icon" aria-label="В меню" title="В меню">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+
+    <!-- Инструменты (Пианино, Ксилофон, Котик, Лягушонок) -->
+    <div class="instruments-bar">
+      <button class="inst-btn active" data-inst="piano">🎹 Пианино</button>
+      <button class="inst-btn" data-inst="xylophone">🔔 Колокольчик</button>
+    </div>
+
+    <!-- Режим караоке / песенок -->
+    <div class="song-panel">
+      <span style="font-size:18px;">🎵</span>
+      <select id="songSelect" class="song-select" aria-label="Выбор песенки">
+        <option value="free">Свободная игра</option>
+        <option value="geese">Гуси («Два весёлых гуся»)</option>
+        <option value="yolochka">Ёлочка («Маленькой ёлочке»)</option>
+        <option value="grasshopper">Кузнечик («В траве сидел»)</option>
+        <option value="star">Звёздочка («Twinkle Star»)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Подсказка текущего слога / ноты в песенке -->
+  <div class="song-hint-box">
+    <div id="songBubble" class="song-bubble" style="display:none;">
+      <span id="songLyric">Нажимай на светящуюся клавишу!</span>
+    </div>
+  </div>
+
+  <!-- 8 Радужных клавиш октавы -->
+  <div class="piano-keyboard" id="keyboard">
+    <!-- Клавиша 1: ДО -->
+    <div class="key" data-note="0" style="background:linear-gradient(180deg, #FF6B6B 0%, #EE5253 100%);">
+      <div class="key-top-icon">🍎</div>
+      <div class="key-badge">1</div>
+      <div class="key-note-name">ДО</div>
+    </div>
+    <!-- Клавиша 2: РЕ -->
+    <div class="key" data-note="1" style="background:linear-gradient(180deg, #FFA502 0%, #FF793F 100%);">
+      <div class="key-top-icon">🦊</div>
+      <div class="key-badge">2</div>
+      <div class="key-note-name">РЕ</div>
+    </div>
+    <!-- Клавиша 3: МИ -->
+    <div class="key" data-note="2" style="background:linear-gradient(180deg, #FFDD59 0%, #FFC048 100%);">
+      <div class="key-top-icon">⭐</div>
+      <div class="key-badge">3</div>
+      <div class="key-note-name">МИ</div>
+    </div>
+    <!-- Клавиша 4: ФА -->
+    <div class="key" data-note="3" style="background:linear-gradient(180deg, #2ED573 0%, #10AC84 100%);">
+      <div class="key-top-icon">🐸</div>
+      <div class="key-badge">4</div>
+      <div class="key-note-name">ФА</div>
+    </div>
+    <!-- Клавиша 5: СОЛЬ -->
+    <div class="key" data-note="4" style="background:linear-gradient(180deg, #70A1FF 0%, #1E90FF 100%);">
+      <div class="key-top-icon">🐬</div>
+      <div class="key-badge">5</div>
+      <div class="key-note-name">СОЛЬ</div>
+    </div>
+    <!-- Клавиша 6: ЛЯ -->
+    <div class="key" data-note="5" style="background:linear-gradient(180deg, #5352ED 0%, #3742FA 100%);">
+      <div class="key-top-icon">🚀</div>
+      <div class="key-badge">6</div>
+      <div class="key-note-name">ЛЯ</div>
+    </div>
+    <!-- Клавиша 7: СИ -->
+    <div class="key" data-note="6" style="background:linear-gradient(180deg, #A55EEA 0%, #8854D0 100%);">
+      <div class="key-top-icon">🍇</div>
+      <div class="key-badge">7</div>
+      <div class="key-note-name">СИ</div>
+    </div>
+    <!-- Клавиша 8: ДО (верхняя) -->
+    <div class="key" data-note="7" style="background:linear-gradient(180deg, #FF78B9 0%, #EA2027 100%);">
+      <div class="key-top-icon">👑</div>
+      <div class="key-badge">8</div>
+      <div class="key-note-name">ДО</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// -------------------------------------------------------------
+// WEB AUDIO API СИНТЕЗАТОР ИНСТРУМЕНТОВ
+// -------------------------------------------------------------
+class PianoAudio {
+  constructor() {
+    this.ctx = null;
+    this.currentInstrument = 'piano';
+    // Ноты диатонической гаммы (C4 - C5)
+    this.frequencies = [
+      261.63, // 0: C4 (До)
+      293.66, // 1: D4 (Ре)
+      329.63, // 2: E4 (Ми)
+      349.23, // 3: F4 (Фа)
+      392.00, // 4: G4 (Соль)
+      440.00, // 5: A4 (Ля)
+      493.88, // 6: B4 (Си)
+      523.25  // 7: C5 (До)
+    ];
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+  // Только использует ctx — не создаёт. Безопасно вызывать из не-gesture кода.
+  _check() {
+    if (!this.ctx) return false;
+    if (this.ctx.state === 'suspended') {
+      // Пробуем resume, но не гарантируем — нужен gesture
+      this.ctx.resume().catch(() => {});
+      return false;
+    }
+    return true;
+  }
+
+  playNote(noteIdx) {
+    if (!this._check()) return;
+    const freq = this.frequencies[noteIdx];
+    const now = this.ctx.currentTime;
+
+    if (this.currentInstrument === 'piano') {
+      this.playPiano(freq, now);
+    } else if (this.currentInstrument === 'xylophone') {
+      this.playXylophone(freq, now);
+    } else if (this.currentInstrument === 'cat') {
+      this.playCatMeow(freq, now);
+    } else if (this.currentInstrument === 'frog') {
+      this.playFrogCroak(freq, now);
+    }
+  }
+
+  // 1. Фортепиано: два осциллятора с динамическим lowpass фильтром
+  playPiano(freq, now) {
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const filter = this.ctx.createBiquadFilter();
+    const gain = this.ctx.createGain();
+
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(freq, now);
+
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * 2, now); // гармоника октавой выше
+
+    // Фильтр имитирует молоточек струны: в момент удара яркий, затем мягкий
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2800, now);
+    filter.frequency.exponentialRampToValueAtTime(450, now + 1.2);
+
+    // Огибающая громкости
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 1.4);
+    osc2.stop(now + 1.4);
+  }
+
+  // 2. Ксилофон / Металлофон: хрустальный звон колокольчика
+  playXylophone(freq, now) {
+    const oscMain = this.ctx.createOscillator();
+    const oscOvertone = this.ctx.createOscillator();
+    const gainMain = this.ctx.createGain();
+    const gainOvertone = this.ctx.createGain();
+
+    oscMain.type = 'sine';
+    oscMain.frequency.setValueAtTime(freq, now);
+    gainMain.gain.setValueAtTime(0.45, now);
+    gainMain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+
+    // Характерный высокий негармонический обертон металлической пластины
+    oscOvertone.type = 'sine';
+    oscOvertone.frequency.setValueAtTime(freq * 2.76, now);
+    gainOvertone.gain.setValueAtTime(0.25, now);
+    gainOvertone.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    oscMain.connect(gainMain);
+    gainMain.connect(this.ctx.destination);
+    oscOvertone.connect(gainOvertone);
+    gainOvertone.connect(this.ctx.destination);
+
+    oscMain.start(now);
+    oscOvertone.start(now);
+    oscMain.stop(now + 1.0);
+    oscOvertone.stop(now + 0.12);
+  }
+
+  // 3. Котик: «Мяу!» — используем мультяшный глиссандо + вибрато
+  playCatMeow(freq, now) {
+    // Котики мяукают примерно в диапазоне 400-900 Hz, независимо от ноты.
+    // Ноты меняют высоту, но характер остаётся кошачьим.
+    const base = Math.max(300, Math.min(freq * 0.9, 700));
+
+    // Основная «гортань» — пилообразная волна через два резонирующих фильтра
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sawtooth';
+    // Характерный кошачий глиссандо: «мь» → «я» → «у»
+    osc.frequency.setValueAtTime(base * 0.75, now);           // закрытый рот «мь»
+    osc.frequency.linearRampToValueAtTime(base * 1.55, now + 0.10); // «Я» — рот открывается
+    osc.frequency.exponentialRampToValueAtTime(base * 0.70, now + 0.45); // «у» — рот закрывается
+
+    // Вибрато (котик «вибрирует» горлом)
+    const vibLFO = this.ctx.createOscillator();
+    vibLFO.frequency.value = 6.5;
+    vibLFO.type = 'sine';
+    const vibGain = this.ctx.createGain();
+    vibGain.gain.setValueAtTime(0, now);
+    vibGain.gain.linearRampToValueAtTime(18, now + 0.15);
+    vibGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    vibLFO.connect(vibGain);
+    vibGain.connect(osc.frequency);
+
+    // Формантный фильтр (резонанс рта котика)
+    const f1 = this.ctx.createBiquadFilter();
+    f1.type = 'peaking';
+    f1.frequency.setValueAtTime(650, now);
+    f1.frequency.linearRampToValueAtTime(1200, now + 0.10);
+    f1.frequency.exponentialRampToValueAtTime(550, now + 0.45);
+    f1.gain.value = 14;
+    f1.Q.value = 2.2;
+
+    const f2 = this.ctx.createBiquadFilter();
+    f2.type = 'peaking';
+    f2.frequency.value = 2500;
+    f2.gain.value = 8;
+    f2.Q.value = 1.5;
+
+    const masterGain = this.ctx.createGain();
+    masterGain.gain.setValueAtTime(0.001, now);
+    masterGain.gain.linearRampToValueAtTime(0.32, now + 0.06);
+    masterGain.gain.setValueAtTime(0.32, now + 0.15);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + 0.52);
+
+    osc.connect(f1);
+    f1.connect(f2);
+    f2.connect(masterGain);
+    masterGain.connect(this.ctx.destination);
+
+    osc.start(now);
+    vibLFO.start(now);
+    osc.stop(now + 0.52);
+    vibLFO.stop(now + 0.52);
+  }
+
+  // 4. Лягушонок: «Ква!» — короткий резкий прыжок частоты вниз
+  playFrogCroak(freq, now) {
+    // Лягушки квакают низко: 180-400 Hz
+    const base = Math.max(180, Math.min(freq * 0.65, 380));
+
+    // Звук «К» — короткий щелчок
+    const clickOsc = this.ctx.createOscillator();
+    clickOsc.type = 'square';
+    clickOsc.frequency.setValueAtTime(base * 2.2, now);
+    clickOsc.frequency.exponentialRampToValueAtTime(base * 0.5, now + 0.04);
+    const clickGain = this.ctx.createGain();
+    clickGain.gain.setValueAtTime(0.38, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+    clickOsc.connect(clickGain);
+    clickGain.connect(this.ctx.destination);
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.045);
+
+    // Звук «ВА» — низкое гудение с резонансом горла
+    const croakOsc = this.ctx.createOscillator();
+    croakOsc.type = 'triangle';
+    croakOsc.frequency.setValueAtTime(base * 1.1, now + 0.03);
+    croakOsc.frequency.exponentialRampToValueAtTime(base * 0.78, now + 0.22);
+
+    // Вибрато лягушки
+    const vibLFO = this.ctx.createOscillator();
+    vibLFO.frequency.value = 28; // быстрое дрожание горла
+    vibLFO.type = 'sine';
+    const vibGain = this.ctx.createGain();
+    vibGain.gain.setValueAtTime(12, now + 0.03);
+    vibGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    vibLFO.connect(vibGain);
+    vibGain.connect(croakOsc.frequency);
+
+    const frogFilter = this.ctx.createBiquadFilter();
+    frogFilter.type = 'bandpass';
+    frogFilter.frequency.setValueAtTime(base * 1.4, now + 0.03);
+    frogFilter.frequency.exponentialRampToValueAtTime(base * 0.85, now + 0.22);
+    frogFilter.Q.value = 4.5;
+
+    const croakGain = this.ctx.createGain();
+    croakGain.gain.setValueAtTime(0.001, now + 0.03);
+    croakGain.gain.linearRampToValueAtTime(0.42, now + 0.07);
+    croakGain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+    croakOsc.connect(frogFilter);
+    frogFilter.connect(croakGain);
+    croakGain.connect(this.ctx.destination);
+    croakOsc.start(now + 0.03);
+    vibLFO.start(now + 0.03);
+    croakOsc.stop(now + 0.28);
+    vibLFO.stop(now + 0.28);
+  }
+
+  // Победный праздничный аккорд
+  playVictory() {
+    if (!this._check()) return;
+    const chord = [261.63, 329.63, 392.00, 523.25];
+    chord.forEach((f, i) => {
+      setTimeout(() => this.playXylophone(f, this.ctx.currentTime), i * 110);
+    });
+  }
+}
+const audio = new PianoAudio();
+
+// -------------------------------------------------------------
+// ПЕСЕНКИ ДЛЯ МАЛЫШЕЙ (НОТЫ 0..7)
+// -------------------------------------------------------------
+const SONGS = {
+  free: null,
+  geese: {
+    title: 'Два весёлых гуся',
+    steps: [
+      { note: 3, lyric: 'Жи-' },   // Фа
+      { note: 2, lyric: 'ли' },    // Ми
+      { note: 1, lyric: 'у' },     // Ре
+      { note: 0, lyric: 'ба-' },   // До
+      { note: 4, lyric: 'бу-' },   // Соль
+      { note: 4, lyric: 'си,' },   // Соль
+      { note: 3, lyric: 'Два' },   // Фа
+      { note: 2, lyric: 'ве-' },   // Ми
+      { note: 1, lyric: 'сё-' },   // Ре
+      { note: 0, lyric: 'лых' },   // До
+      { note: 4, lyric: 'гу-' },   // Соль
+      { note: 4, lyric: 'ся!' },   // Соль
+      { note: 3, lyric: 'О-' },    // Фа
+      { note: 5, lyric: 'дин' },   // Ля
+      { note: 5, lyric: 'се-' },   // Ля
+      { note: 3, lyric: 'рый,' },  // Фа
+      { note: 2, lyric: 'дру-' },  // Ми
+      { note: 4, lyric: 'гой' },   // Соль
+      { note: 4, lyric: 'бе-' },   // Соль
+      { note: 2, lyric: 'лый,' },  // Ми
+      { note: 1, lyric: 'Два' },   // Ре
+      { note: 2, lyric: 'ве-' },   // Ми
+      { note: 3, lyric: 'сё-' },   // Фа
+      { note: 1, lyric: 'лых' },   // Ре
+      { note: 0, lyric: 'гу-' },   // До
+      { note: 0, lyric: 'ся! 🎉' } // До
+    ]
+  },
+  yolochka: {
+    title: 'Маленькой ёлочке',
+    steps: [
+      { note: 4, lyric: 'Ма-' },   // Соль
+      { note: 2, lyric: 'лень-' }, // Ми
+      { note: 2, lyric: 'кой' },   // Ми
+      { note: 4, lyric: 'ё-' },    // Соль
+      { note: 2, lyric: 'лоч-' },  // Ми
+      { note: 2, lyric: 'ке' },    // Ми
+      { note: 4, lyric: 'хо-' },   // Соль
+      { note: 3, lyric: 'лод-' },  // Фа
+      { note: 2, lyric: 'но' },    // Ми
+      { note: 1, lyric: 'зи-' },   // Ре
+      { note: 0, lyric: 'мой!' },  // До
+      { note: 5, lyric: 'Из' },    // Ля
+      { note: 7, lyric: 'ле-' },   // До2
+      { note: 5, lyric: 'су' },    // Ля
+      { note: 4, lyric: 'ё-' },    // Соль
+      { note: 2, lyric: 'лоч-' },  // Ми
+      { note: 2, lyric: 'ку' },    // Ми
+      { note: 4, lyric: 'взя-' },  // Соль
+      { note: 3, lyric: 'ли' },    // Фа
+      { note: 2, lyric: 'мы' },    // Ми
+      { note: 1, lyric: 'до-' },   // Ре
+      { note: 0, lyric: 'мой! 🎄' }// До
+    ]
+  },
+  grasshopper: {
+    title: 'В траве сидел кузнечик',
+    steps: [
+      { note: 5, lyric: 'В тра-' },// Ля
+      { note: 2, lyric: 'ве' },    // Ми
+      { note: 5, lyric: 'си-' },   // Ля
+      { note: 2, lyric: 'дел' },   // Ми
+      { note: 5, lyric: 'куз-' },  // Ля
+      { note: 4, lyric: 'не-' },   // Соль
+      { note: 4, lyric: 'чик,' },  // Соль
+      { note: 4, lyric: 'В тра-' },// Соль
+      { note: 2, lyric: 'ве' },    // Ми
+      { note: 4, lyric: 'си-' },   // Соль
+      { note: 2, lyric: 'дел' },   // Ми
+      { note: 4, lyric: 'куз-' },  // Соль
+      { note: 5, lyric: 'не-' },   // Ля
+      { note: 5, lyric: 'чик!' },  // Ля
+      { note: 5, lyric: 'Со-' },   // Ля
+      { note: 7, lyric: 'всем' },  // До2
+      { note: 6, lyric: 'как' },   // Си
+      { note: 5, lyric: 'о-' },    // Ля
+      { note: 4, lyric: 'гу-' },   // Соль
+      { note: 3, lyric: 'ре-' },   // Фа
+      { note: 2, lyric: 'чик! 🦗' }// Ми
+    ]
+  },
+  star: {
+    title: 'Звёздочка (Twinkle Star)',
+    steps: [
+      { note: 0, lyric: 'Twin-' }, // До
+      { note: 0, lyric: 'kle,' },  // До
+      { note: 4, lyric: 'twin-' }, // Соль
+      { note: 4, lyric: 'kle,' },  // Соль
+      { note: 5, lyric: 'lit-' },  // Ля
+      { note: 5, lyric: 'tle' },   // Ля
+      { note: 4, lyric: 'star!' }, // Соль
+      { note: 3, lyric: 'How' },   // Фа
+      { note: 3, lyric: 'I' },     // Фа
+      { note: 2, lyric: 'won-' },  // Ми
+      { note: 2, lyric: 'der' },   // Ми
+      { note: 1, lyric: 'what' },  // Ре
+      { note: 1, lyric: 'you' },   // Ре
+      { note: 0, lyric: 'are! ⭐' }// До
+    ]
+  }
+};
+
+let currentSongKey = 'free';
+let currentSongStep = 0;
+const songBubble = document.getElementById('songBubble');
+const songLyric = document.getElementById('songLyric');
+const keys = Array.from(document.querySelectorAll('.key'));
+
+// Обновление состояния подсветки песенки
+function updateSongState() {
+  const song = SONGS[currentSongKey];
+  keys.forEach(k => k.classList.remove('target-key'));
+
+  if (!song) {
+    songBubble.style.display = 'none';
+    return;
+  }
+
+  songBubble.style.display = 'flex';
+  if (currentSongStep < song.steps.length) {
+    const step = song.steps[currentSongStep];
+    songLyric.textContent = `«${song.title}»: ${step.lyric}`;
+    const targetKeyEl = keys[step.note];
+    if (targetKeyEl) targetKeyEl.classList.add('target-key');
+  } else {
+    // Песенка сыграна целиком!
+    songLyric.textContent = `🎉 Ура! Песенка сыграна! 🎉`;
+    audio.playVictory();
+    fireVictoryConfetti();
+    setTimeout(() => {
+      currentSongStep = 0;
+      updateSongState();
+    }, 3500);
+  }
+}
+
+// -------------------------------------------------------------
+// ВЫЛЕТАЮЩИЕ НОТКИ И САЛЮТ
+// -------------------------------------------------------------
+const SPARKS = ['🎵', '🎶', '⭐', '✨', '💖', '🔔'];
+function spawnNoteSpark(x, y) {
+  const s = document.createElement('div');
+  s.className = 'note-spark';
+  s.textContent = SPARKS[Math.floor(Math.random() * SPARKS.length)];
+  s.style.left = x + 'px';
+  s.style.top = y + 'px';
+  document.body.appendChild(s);
+  setTimeout(() => s.remove(), 900);
+}
+
+function fireVictoryConfetti() {
+  const colors = ['#FF4757', '#FFA502', '#FFDD59', '#2ED573', '#1E90FF', '#9D4EDD'];
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    const s = 10 + Math.random() * 14;
+    c.style.width = s + 'px';
+    c.style.height = (s * (Math.random() > 0.5 ? 1 : 0.6)) + 'px';
+    c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+    c.style.left = cx + 'px';
+    c.style.top = cy + 'px';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 70 + Math.random() * 260;
+    c.style.setProperty('--cx', `${Math.cos(angle) * dist}px`);
+    c.style.setProperty('--cy', `${Math.sin(angle) * dist}px`);
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 1700);
+  }
+}
+
+// -------------------------------------------------------------
+// НАЖАТИЕ НА КЛАВИШИ (МУЛЬТИТАЧ)
+// -------------------------------------------------------------
+function triggerKey(noteIdx, clientX, clientY) {
+  const song = SONGS[currentSongKey];
+  let actualNoteToPlay = noteIdx;
+
+  if (song && currentSongStep < song.steps.length) {
+    // В режиме караоке звучит правильная следующая нота песенки!
+    actualNoteToPlay = song.steps[currentSongStep].note;
+    currentSongStep++;
+    updateSongState();
+  }
+
+  // Играем ноту
+  audio.playNote(actualNoteToPlay);
+
+  // Визуальный эффект
+  const keyEl = keys[actualNoteToPlay];
+  if (keyEl) {
+    keyEl.classList.add('pressed');
+    setTimeout(() => keyEl.classList.remove('pressed'), 180);
+    const rect = keyEl.getBoundingClientRect();
+    const sx = clientX || (rect.left + rect.width / 2);
+    const sy = clientY || (rect.top + 30);
+    spawnNoteSpark(sx, sy);
+  }
+}
+
+// Навешиваем слушатели на клавиши
+keys.forEach(keyEl => {
+  const noteIdx = parseInt(keyEl.dataset.note, 10);
+
+  keyEl.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    audio.init();
+    triggerKey(noteIdx, e.clientX, e.clientY);
+  });
+});
+
+// -------------------------------------------------------------
+// ПЕРЕКЛЮЧЕНИЕ ИНСТРУМЕНТОВ И ПЕСЕНОК
+// -------------------------------------------------------------
+const instBtns = document.querySelectorAll('.inst-btn');
+instBtns.forEach(btn => {
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    audio.init();
+    instBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    audio.currentInstrument = btn.dataset.inst;
+    // Проиграть тестовую ноту выбранного инструмента
+    audio.playNote(4);
+  });
+});
+
+const songSelect = document.getElementById('songSelect');
+songSelect.addEventListener('change', (e) => {
+  currentSongKey = e.target.value;
+  currentSongStep = 0;
+  updateSongState();
+});
+
+// Фиксация альбомной ориентации
+function lockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+}
+window.addEventListener('load', lockLandscape);
+window.addEventListener('pointerdown', () => {
+  audio.init();
+  lockLandscape();
+}, { once: true });
+</script>
+</body>
+</html>

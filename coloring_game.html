@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Раскраска</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-1:#8FD3F4;
+    --sky-2:#BEE3F8;
+    --ink:#2B2140;
+    --panel:#FFFFFF;
+    --sun:#FFD23F;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+  html,body{
+    width:100%; height:100%;
+    overflow:hidden;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg, var(--sky-1), var(--sky-2));
+    touch-action:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  #app{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items:center;
+    padding:calc(env(safe-area-inset-top, 6px) + 6px) 12px calc(env(safe-area-inset-bottom, 6px) + 8px);
+  }
+
+  /* Верхняя панель */
+  .top-bar{
+    width:100%;
+    max-width:960px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    z-index:10;
+  }
+  .btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#FFFFFF;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    color:var(--ink);
+    box-shadow:0 4px 0 var(--ink);
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease;
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+  }
+  .btn:active{
+    transform:translateY(3px);
+    box-shadow:0 1px 0 var(--ink);
+  }
+  .btn-icon{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    padding:0;
+    text-decoration:none;
+    flex-shrink:0;
+  }
+  .btn-icon svg{
+    width:22px;
+    height:22px;
+    stroke:var(--ink);
+  }
+  .nav-group{
+    display:flex;
+    align-items:center;
+    background:#FFFFFFE6;
+    border:3px solid var(--ink);
+    border-radius:99px;
+    padding:2px 6px;
+    box-shadow:0 4px 0 var(--ink);
+    gap:6px;
+  }
+  .nav-btn{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:#FFF3C2;
+    border:2.5px solid var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    cursor:pointer;
+    box-shadow:0 2px 0 var(--ink);
+    transition:transform .1s ease;
+  }
+  .nav-btn:active{
+    transform:translateY(2px);
+    box-shadow:none;
+  }
+  .pic-title{
+    font-size:clamp(0.75rem, 2.4vmin, 0.95rem);
+    font-weight:800;
+    padding:0 4px;
+    white-space:nowrap;
+  }
+
+  /* Центральная часть с рисунком */
+  .canvas-wrap{
+    position:relative;
+    flex:1;
+    width:100%;
+    max-width:820px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px 0;
+    min-height:0; /* важно для flex в ландшафте */
+  }
+  .drawing-board{
+    background:#FFFFFF;
+    border:3.5px solid var(--ink);
+    border-radius:18px;
+    box-shadow:0 6px 0 var(--ink);
+    width:100%;
+    height:100%;
+    max-height:calc(100vh - 120px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    padding:6px;
+    position:relative;
+  }
+  .drawing-board svg{
+    width:100%;
+    height:100%;
+    max-height:100%;
+    object-fit:contain;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,0.06));
+  }
+
+  /* Красивые кликабельные секции SVG */
+  .paintable{
+    cursor:pointer;
+    transition:fill 0.18s ease-out, transform 0.1s ease;
+    stroke:#2B2140;
+    stroke-width:4.5;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .paintable:active{
+    filter:brightness(1.1);
+  }
+  .outline-only{
+    stroke:#2B2140;
+    stroke-width:4.5;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    fill:none;
+    pointer-events:none;
+  }
+
+  /* Нижняя палитра красок */
+  .palette-bar{
+    width:100%;
+    max-width:960px;
+    background:#FFFFFFE8;
+    border:3px solid var(--ink);
+    border-radius:24px;
+    padding:4px 10px;
+    box-shadow:0 4px 0 var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:clamp(6px, 1.8vmin, 14px);
+    z-index:10;
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .palette-bar::-webkit-scrollbar{ display:none; }
+  .color-btn{
+    width:clamp(32px, 8vmin, 44px);
+    height:clamp(32px, 8vmin, 44px);
+    border-radius:50%;
+    border:3px solid var(--ink);
+    box-shadow:0 3px 0 var(--ink);
+    cursor:pointer;
+    flex-shrink:0;
+    position:relative;
+    transition:transform .15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .15s ease;
+  }
+  .color-btn::after{
+    content:'';
+    position:absolute;
+    inset:2px;
+    border-radius:50%;
+    background:inherit;
+  }
+  .color-btn.active{
+    transform:translateY(-6px) scale(1.18);
+    box-shadow:0 8px 0 var(--ink);
+    outline:3px solid #FFF3BE;
+  }
+  .color-btn.active::before{
+    content:'✔';
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:clamp(14px, 3.5vmin, 20px);
+    color:#FFFFFF;
+    text-shadow:0 1px 3px rgba(0,0,0,0.8), 0 0 2px #000;
+    z-index:2;
+  }
+
+  /* Эффект брызг и салюта */
+  .particle{
+    position:absolute;
+    pointer-events:none;
+    border-radius:50%;
+    z-index:99;
+    animation:splash .5s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+  }
+  @keyframes splash{
+    0%{ transform:translate(-50%, -50%) scale(0.3); opacity:1; }
+    100%{ transform:translate(var(--tx), var(--ty)) scale(1.2); opacity:0; }
+  }
+
+  /* Салют победы */
+  .confetti{
+    position:absolute;
+    pointer-events:none;
+    z-index:9999;
+    animation:confetti-fall 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+  @keyframes confetti-fall{
+    0%{ transform:translate(0, 0) rotate(0deg) scale(0.6); opacity:1; }
+    100%{ transform:translate(var(--cx), var(--cy)) rotate(720deg) scale(1.2); opacity:0; }
+  }
+
+  /* Экран поворота устройства */
+  .rotate-prompt{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(43,33,64,0.94);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    color:#FFFFFF;
+    text-align:center;
+  }
+  @media screen and (orientation: portrait){
+    .rotate-prompt{ display:flex; }
+  }
+  .rotate-card{
+    background:#FFFFFF;
+    color:var(--ink);
+    border:4px solid var(--ink);
+    border-radius:22px;
+    padding:20px 24px;
+    max-width:300px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+  }
+  .rotate-icon{
+    width:56px;
+    height:56px;
+    color:#FFD23F;
+    margin-bottom:10px;
+    animation:phone-rotate 2.2s ease-in-out infinite;
+  }
+  .rotate-icon svg{ width:100%; height:100%; }
+  @keyframes phone-rotate{
+    0%,20%{ transform:rotate(0deg); }
+    50%,70%{ transform:rotate(-90deg); }
+    90%,100%{ transform:rotate(0deg); }
+  }
+  .rotate-title{
+    font-family:'Comfortaa', cursive;
+    font-weight:700;
+    font-size:1.2rem;
+    margin-bottom:6px;
+  }
+  .rotate-sub{
+    font-size:0.88rem;
+    opacity:0.85;
+  }
+</style>
+</head>
+<body>
+
+<div class="rotate-prompt">
+  <div class="rotate-card">
+    <div class="rotate-icon">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="18" y="10" width="28" height="44" rx="4"/>
+        <line x1="28" y1="46" x2="36" y2="46"/>
+        <path d="M48 20 A 24 24 0 0 1 48 44" stroke-dasharray="4 4" stroke-width="2.5"/>
+        <polyline points="48 48 48 42 42 45"/>
+      </svg>
+    </div>
+    <div class="rotate-title">Поверни телефон 🔄</div>
+    <div class="rotate-sub">Для раскраски нужен альбомный (горизонтальный) экран!</div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- Верхняя строка кнопок -->
+  <div class="top-bar">
+    <a href="index.html" class="btn btn-icon" aria-label="В меню" title="В меню">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+
+    <div class="nav-group">
+      <button class="nav-btn" id="prevBtn" aria-label="Назад">◀</button>
+      <div class="pic-title" id="picTitle">🚜 Трактор (1/5)</div>
+      <button class="nav-btn" id="nextBtn" aria-label="Вперед">▶</button>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-icon" id="clearBtn" aria-label="Очистить" title="Очистить" style="background:#FFEAA7;">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+        </svg>
+      </button>
+      <button class="btn btn-icon" id="cheerBtn" aria-label="Салют" title="Готово!" style="background:#FFD23F;">
+        <svg viewBox="0 0 24 24" fill="#FFD23F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Холст для рисования -->
+  <div class="canvas-wrap">
+    <div class="drawing-board" id="board">
+      <!-- SVG рисунок генерируется через JS -->
+    </div>
+  </div>
+
+  <!-- Палитра сочных цветов -->
+  <div class="palette-bar" id="palette">
+    <!-- Кнопки цветов -->
+  </div>
+</div>
+
+<script>
+// Аудиосинтезатор Web Audio API (без внешних файлов)
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+  pop(freq = 440) {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.5, this.ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.12);
+  }
+  fanfare() {
+    this.init();
+    if (!this.ctx) return;
+    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+    notes.forEach((freq, idx) => {
+      const t = this.ctx.currentTime + idx * 0.09;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.28, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.25);
+    });
+  }
+}
+const sfx = new SoundFX();
+
+// Попытка зафиксировать альбомную ориентацию на Android
+function lockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+}
+window.addEventListener('load', lockLandscape);
+window.addEventListener('pointerdown', () => {
+  sfx.init();
+  lockLandscape();
+}, { once: true });
+
+// Палитра красок (крупные, насыщенные)
+const COLORS = [
+  { name: 'Красный', val: '#FF4757' },
+  { name: 'Оранжевый', val: '#FFA502' },
+  { name: 'Жёлтый', val: '#FFDD59' },
+  { name: 'Зелёный', val: '#2ED573' },
+  { name: 'Изумрудный', val: '#05C46B' },
+  { name: 'Голубой', val: '#00D2D3' },
+  { name: 'Синий', val: '#1E90FF' },
+  { name: 'Фиолетовый', val: '#8B5CF6' },
+  { name: 'Розовый', val: '#FF6584' },
+  { name: 'Коричневый', val: '#8C5331' },
+  { name: 'Серый', val: '#A4B0BE' },
+  { name: 'Белый', val: '#FFFFFF' }
+];
+
+let selectedColor = COLORS[0].val;
+
+// 5 интересных картинок для мальчика 3,5 лет
+const PICTURES = [
+  {
+    title: '🚜 Трактор с ковшом',
+    svg: `
+      <svg viewBox="0 0 600 420">
+        <!-- Фон/земля -->
+        <path class="paintable" fill="#FFFFFF" d="M 20 370 Q 180 360 320 375 T 580 370 L 580 405 L 20 405 Z"/>
+        <!-- Корпус трактора -->
+        <path class="paintable" fill="#FFFFFF" d="M 220 200 L 370 200 L 370 300 L 160 300 L 160 270 L 220 270 Z"/>
+        <!-- Кабина -->
+        <path class="paintable" fill="#FFFFFF" d="M 220 200 L 220 90 L 340 90 L 360 200 Z"/>
+        <!-- Крыша кабины -->
+        <rect class="paintable" fill="#FFFFFF" x="205" y="75" width="150" height="20" rx="6"/>
+        <!-- Стекло кабины -->
+        <path class="paintable" fill="#FFFFFF" d="M 235 110 L 325 110 L 340 185 L 235 185 Z"/>
+        <!-- Выхлопная труба -->
+        <path class="paintable" fill="#FFFFFF" d="M 345 90 L 345 50 L 360 40 L 365 90 Z"/>
+        <!-- Капот / двигатель -->
+        <path class="paintable" fill="#FFFFFF" d="M 370 215 L 470 215 L 475 300 L 370 300 Z"/>
+        <!-- Фара -->
+        <polygon class="paintable" fill="#FFFFFF" points="475,230 495,225 495,255 475,250"/>
+        <!-- Радиаторная решетка -->
+        <rect class="paintable" fill="#FFFFFF" x="430" y="240" width="35" height="40" rx="4"/>
+        <!-- Стрела ковша -->
+        <path class="paintable" fill="#FFFFFF" d="M 390 270 L 480 200 L 525 240 L 510 260 L 475 225 L 395 285 Z"/>
+        <!-- Ковш -->
+        <path class="paintable" fill="#FFFFFF" d="M 515 235 Q 570 240 575 295 L 530 320 Q 495 295 505 255 Z"/>
+        <!-- Зубья ковша -->
+        <polygon class="paintable" fill="#FFFFFF" points="575,295 588,300 568,310 580,317 555,322 530,320"/>
+        <!-- Большое заднее колесо -->
+        <circle class="paintable" fill="#FFFFFF" cx="200" cy="305" r="62"/>
+        <circle class="paintable" fill="#FFFFFF" cx="200" cy="305" r="38"/>
+        <circle class="paintable" fill="#FFFFFF" cx="200" cy="305" r="16"/>
+        <!-- Переднее колесо -->
+        <circle class="paintable" fill="#FFFFFF" cx="420" cy="325" r="44"/>
+        <circle class="paintable" fill="#FFFFFF" cx="420" cy="325" r="26"/>
+        <circle class="paintable" fill="#FFFFFF" cx="420" cy="325" r="10"/>
+      </svg>
+    `
+  },
+  {
+    title: '🚒 Пожарная машина',
+    svg: `
+      <svg viewBox="0 0 600 420">
+        <!-- Дорога -->
+        <rect class="paintable" fill="#FFFFFF" x="20" y="365" width="560" height="35" rx="8"/>
+        <!-- Основной кузов -->
+        <path class="paintable" fill="#FFFFFF" d="M 70 170 L 370 170 L 370 310 L 70 310 Z"/>
+        <!-- Кабина спереди -->
+        <path class="paintable" fill="#FFFFFF" d="M 370 170 L 450 170 Q 520 180 525 250 L 525 310 L 370 310 Z"/>
+        <!-- Лобовое и боковое стекло -->
+        <path class="paintable" fill="#FFFFFF" d="M 385 185 L 445 185 L 485 240 L 385 240 Z"/>
+        <!-- Мигалка -->
+        <path class="paintable" fill="#FFFFFF" d="M 410 170 L 410 145 Q 430 135 450 145 L 450 170 Z"/>
+        <!-- Основание лестницы -->
+        <rect class="paintable" fill="#FFFFFF" x="120" y="150" width="80" height="20" rx="4"/>
+        <!-- Пожарная лестница -->
+        <path class="paintable" fill="#FFFFFF" d="M 90 145 L 350 100 L 355 120 L 95 165 Z"/>
+        <!-- Ступеньки лестницы (детали) -->
+        <line class="outline-only" x1="150" y1="135" x2="155" y2="155"/>
+        <line class="outline-only" x1="200" y1="125" x2="205" y2="145"/>
+        <line class="outline-only" x1="250" y1="116" x2="255" y2="136"/>
+        <line class="outline-only" x1="300" y1="108" x2="305" y2="128"/>
+        <!-- Дверь с ручкой -->
+        <rect class="paintable" fill="#FFFFFF" x="385" y="250" width="65" height="55" rx="4"/>
+        <circle class="paintable" fill="#FFFFFF" cx="395" cy="275" r="4"/>
+        <!-- Отсеки с оборудованием на кузове -->
+        <rect class="paintable" fill="#FFFFFF" x="90" y="200" width="70" height="90" rx="5"/>
+        <rect class="paintable" fill="#FFFFFF" x="180" y="200" width="70" height="90" rx="5"/>
+        <rect class="paintable" fill="#FFFFFF" x="270" y="200" width="80" height="90" rx="5"/>
+        <!-- Свернутый шланг в отсеке -->
+        <circle class="paintable" fill="#FFFFFF" cx="310" cy="245" r="24"/>
+        <circle class="paintable" fill="#FFFFFF" cx="310" cy="245" r="10"/>
+        <!-- Фара и бампер -->
+        <rect class="paintable" fill="#FFFFFF" x="515" y="260" width="20" height="22" rx="4"/>
+        <rect class="paintable" fill="#FFFFFF" x="510" y="295" width="30" height="18" rx="4"/>
+        <!-- Колеса -->
+        <circle class="paintable" fill="#FFFFFF" cx="160" cy="315" r="45"/>
+        <circle class="paintable" fill="#FFFFFF" cx="160" cy="315" r="24"/>
+        <circle class="paintable" fill="#FFFFFF" cx="440" cy="315" r="45"/>
+        <circle class="paintable" fill="#FFFFFF" cx="440" cy="315" r="24"/>
+      </svg>
+    `
+  },
+  {
+    title: '🏎️ Гоночный болид',
+    svg: `
+      <svg viewBox="0 0 600 420">
+        <!-- Флажки на фоне -->
+        <polygon class="paintable" fill="#FFFFFF" points="80,50 140,75 80,100"/>
+        <polygon class="paintable" fill="#FFFFFF" points="500,50 560,75 500,100"/>
+        <!-- Трасса -->
+        <path class="paintable" fill="#FFFFFF" d="M 30 360 Q 300 350 570 360 L 570 395 L 30 395 Z"/>
+        <!-- Корпус болида -->
+        <path class="paintable" fill="#FFFFFF" d="M 80 270 Q 140 250 220 240 Q 320 230 450 275 L 530 290 L 530 320 L 70 320 L 70 275 Z"/>
+        <!-- Спойлер (антикрыло) -->
+        <rect class="paintable" fill="#FFFFFF" x="60" y="195" width="80" height="20" rx="4"/>
+        <polygon class="paintable" fill="#FFFFFF" points="90,215 110,215 105,270 85,270"/>
+        <!-- Кабина / шлем гонщика -->
+        <ellipse class="paintable" fill="#FFFFFF" cx="290" cy="205" rx="30" ry="26"/>
+        <path class="paintable" fill="#FFFFFF" d="M 285 195 L 315 195 L 310 215 L 285 215 Z"/>
+        <!-- Стекло обтекателя -->
+        <path class="paintable" fill="#FFFFFF" d="M 315 215 L 370 245 L 315 245 Z"/>
+        <!-- Бортовой номер 1 (круг и звезда) -->
+        <circle class="paintable" fill="#FFFFFF" cx="240" cy="275" r="26"/>
+        <polygon class="paintable" fill="#FFFFFF" points="240,255 246,268 260,268 249,277 253,290 240,282 227,290 231,277 220,268 234,268"/>
+        <!-- Полоса на капоте -->
+        <path class="paintable" fill="#FFFFFF" d="M 370 248 L 470 276 L 465 292 L 365 264 Z"/>
+        <!-- Носовой спойлер -->
+        <rect class="paintable" fill="#FFFFFF" x="510" y="295" width="35" height="25" rx="5"/>
+        <!-- Пламя из трубы сзади -->
+        <path class="paintable" fill="#FFFFFF" d="M 70 290 Q 20 295 40 305 Q 10 312 60 315 Z"/>
+        <!-- Заднее большое колесо -->
+        <circle class="paintable" fill="#FFFFFF" cx="160" cy="315" r="48"/>
+        <circle class="paintable" fill="#FFFFFF" cx="160" cy="315" r="26"/>
+        <circle class="paintable" fill="#FFFFFF" cx="160" cy="315" r="10"/>
+        <!-- Переднее колесо -->
+        <circle class="paintable" fill="#FFFFFF" cx="450" cy="320" r="42"/>
+        <circle class="paintable" fill="#FFFFFF" cx="450" cy="320" r="22"/>
+        <circle class="paintable" fill="#FFFFFF" cx="450" cy="320" r="8"/>
+      </svg>
+    `
+  },
+  {
+    title: '🚀 Ракета в космосе',
+    svg: `
+      <svg viewBox="0 0 600 420">
+        <!-- Луна/планета -->
+        <circle class="paintable" fill="#FFFFFF" cx="110" cy="110" r="50"/>
+        <ellipse class="paintable" fill="#FFFFFF" cx="110" cy="110" rx="70" ry="16"/>
+        <!-- Звезды -->
+        <polygon class="paintable" fill="#FFFFFF" points="490,60 496,75 512,75 499,85 504,100 490,90 476,100 481,85 468,75 484,75"/>
+        <polygon class="paintable" fill="#FFFFFF" points="530,220 535,232 548,232 538,240 542,252 530,244 518,252 522,240 512,232 525,232"/>
+        <polygon class="paintable" fill="#FFFFFF" points="90,280 94,290 105,290 96,297 99,307 90,300 81,307 84,297 75,290 86,290"/>
+        <!-- Корпус ракеты -->
+        <path class="paintable" fill="#FFFFFF" d="M 300 60 Q 370 140 370 280 L 230 280 Q 230 140 300 60 Z"/>
+        <!-- Носовой конус ракеты -->
+        <path class="paintable" fill="#FFFFFF" d="M 300 60 Q 340 105 352 140 L 248 140 Q 260 105 300 60 Z"/>
+        <!-- Иллюминатор (кольцо и стекло) -->
+        <circle class="paintable" fill="#FFFFFF" cx="300" cy="195" r="42"/>
+        <circle class="paintable" fill="#FFFFFF" cx="300" cy="195" r="26"/>
+        <!-- Правое крыло -->
+        <path class="paintable" fill="#FFFFFF" d="M 370 230 L 435 295 L 370 295 Z"/>
+        <!-- Левое крыло -->
+        <path class="paintable" fill="#FFFFFF" d="M 230 230 L 165 295 L 230 295 Z"/>
+        <!-- Центральный стабилизатор -->
+        <path class="paintable" fill="#FFFFFF" d="M 285 240 L 315 240 L 310 295 L 290 295 Z"/>
+        <!-- Сопло двигателя -->
+        <polygon class="paintable" fill="#FFFFFF" points="260,280 340,280 350,305 250,305"/>
+        <!-- Огонь из двигателя (внешний) -->
+        <path class="paintable" fill="#FFFFFF" d="M 260 305 Q 300 410 300 410 Q 300 410 340 305 Z"/>
+        <!-- Огонь из двигателя (внутренний) -->
+        <path class="paintable" fill="#FFFFFF" d="M 275 305 Q 300 370 300 370 Q 300 370 325 305 Z"/>
+      </svg>
+    `
+  },
+  {
+    title: '🚂 Весёлый паровозик',
+    svg: `
+      <svg viewBox="0 0 600 420">
+        <!-- Рельсы и шпалы -->
+        <rect class="paintable" fill="#FFFFFF" x="30" y="360" width="540" height="15" rx="3"/>
+        <rect class="paintable" fill="#FFFFFF" x="30" y="380" width="540" height="15" rx="3"/>
+        <!-- Облака дыма из трубы -->
+        <circle class="paintable" fill="#FFFFFF" cx="440" cy="70" r="26"/>
+        <circle class="paintable" fill="#FFFFFF" cx="395" cy="50" r="32"/>
+        <circle class="paintable" fill="#FFFFFF" cx="340" cy="65" r="24"/>
+        <!-- Кабина машиниста -->
+        <path class="paintable" fill="#FFFFFF" d="M 120 150 L 260 150 L 260 310 L 120 310 Z"/>
+        <!-- Крыша кабины -->
+        <path class="paintable" fill="#FFFFFF" d="M 105 145 Q 190 125 275 145 L 265 155 L 115 155 Z"/>
+        <!-- Окно кабины -->
+        <rect class="paintable" fill="#FFFFFF" x="145" y="170" width="80" height="60" rx="8"/>
+        <!-- Котёл паровоза -->
+        <path class="paintable" fill="#FFFFFF" d="M 260 185 L 470 185 L 470 310 L 260 310 Z"/>
+        <!-- Передний нос котла -->
+        <path class="paintable" fill="#FFFFFF" d="M 470 185 Q 505 245 470 310 Z"/>
+        <!-- Труба -->
+        <path class="paintable" fill="#FFFFFF" d="M 415 185 L 410 115 L 450 105 L 445 185 Z"/>
+        <!-- Колпак / купол на котле -->
+        <path class="paintable" fill="#FFFFFF" d="M 320 185 Q 345 145 370 185 Z"/>
+        <!-- Фара спереди -->
+        <polygon class="paintable" fill="#FFFFFF" points="485,220 520,210 520,245 485,235"/>
+        <!-- Метельник (отбойник) спереди -->
+        <polygon class="paintable" fill="#FFFFFF" points="470,310 530,350 460,350"/>
+        <!-- Большое колесо кабины -->
+        <circle class="paintable" fill="#FFFFFF" cx="190" cy="315" r="54"/>
+        <circle class="paintable" fill="#FFFFFF" cx="190" cy="315" r="32"/>
+        <circle class="paintable" fill="#FFFFFF" cx="190" cy="315" r="12"/>
+        <!-- Передние колеса -->
+        <circle class="paintable" fill="#FFFFFF" cx="330" cy="335" r="36"/>
+        <circle class="paintable" fill="#FFFFFF" cx="330" cy="335" r="18"/>
+        <circle class="paintable" fill="#FFFFFF" cx="425" cy="335" r="36"/>
+        <circle class="paintable" fill="#FFFFFF" cx="425" cy="335" r="18"/>
+        <!-- Шатун (тяга между колесами) -->
+        <rect class="paintable" fill="#FFFFFF" x="315" y="330" width="125" height="12" rx="4"/>
+      </svg>
+    `
+  }
+];
+
+let curPicIdx = 0;
+
+// Инициализация палитры
+const paletteEl = document.getElementById('palette');
+COLORS.forEach((col, idx) => {
+  const btn = document.createElement('button');
+  btn.className = 'color-btn' + (idx === 0 ? ' active' : '');
+  btn.style.backgroundColor = col.val;
+  btn.title = col.name;
+  btn.setAttribute('aria-label', col.name);
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedColor = col.val;
+    sfx.pop(350 + idx * 30);
+  });
+  paletteEl.appendChild(btn);
+});
+
+// Загрузка картинки
+const boardEl = document.getElementById('board');
+const picTitleEl = document.getElementById('picTitle');
+
+function loadPicture(idx) {
+  curPicIdx = (idx + PICTURES.length) % PICTURES.length;
+  const pic = PICTURES[curPicIdx];
+  picTitleEl.textContent = `${pic.title} (${curPicIdx + 1}/${PICTURES.length})`;
+  boardEl.innerHTML = pic.svg;
+  attachPaintHandlers();
+}
+
+// Привязка кликов к раскрашиваемым зонам
+function attachPaintHandlers() {
+  const elements = boardEl.querySelectorAll('.paintable');
+  elements.forEach((elem) => {
+    elem.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      elem.setAttribute('fill', selectedColor);
+
+      // Звуковой эффект с легкой случайной тональностью
+      sfx.pop(400 + Math.random() * 200);
+
+      // Эффект всплеска
+      createSplash(e.clientX, e.clientY, selectedColor);
+    });
+  });
+}
+
+// Брызги при тапе
+function createSplash(x, y, color) {
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 8 + Math.random() * 10;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.backgroundColor = color;
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+
+    const angle = (Math.PI * 2 * i) / 6 + (Math.random() - 0.5) * 0.5;
+    const dist = 20 + Math.random() * 30;
+    p.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+    p.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 550);
+  }
+}
+
+// Салют / поздравление
+function launchConfetti() {
+  sfx.fanfare();
+  const colors = ['#FF4757', '#FFA502', '#FFDD59', '#2ED573', '#1E90FF', '#FF6584'];
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    const size = 10 + Math.random() * 14;
+    c.style.width = size + 'px';
+    c.style.height = (size * (Math.random() > 0.5 ? 1 : 0.6)) + 'px';
+    c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+    c.style.left = centerX + 'px';
+    c.style.top = centerY + 'px';
+
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random() * (Math.min(window.innerWidth, window.innerHeight) * 0.45);
+    c.style.setProperty('--cx', `${Math.cos(angle) * dist}px`);
+    c.style.setProperty('--cy', `${Math.sin(angle) * dist}px`);
+
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2300);
+  }
+}
+
+// Переключение картинок
+document.getElementById('prevBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pop(300);
+  loadPicture(curPicIdx - 1);
+});
+document.getElementById('nextBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pop(500);
+  loadPicture(curPicIdx + 1);
+});
+
+// Кнопка очистить
+document.getElementById('clearBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  sfx.pop(250);
+  loadPicture(curPicIdx);
+});
+
+// Кнопка салюта
+document.getElementById('cheerBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  launchConfetti();
+});
+
+// Первая загрузка
+loadPicture(0);
+</script>
+</body>
+</html>
