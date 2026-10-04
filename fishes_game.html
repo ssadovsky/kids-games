@@ -42,7 +42,7 @@
   .top-bar{
     position:absolute;
     top:calc(env(safe-area-inset-top, 6px) + 6px);
-    left:12px; right:12px;
+    left:calc(env(safe-area-inset-left, 6px) + 12px); right:calc(env(safe-area-inset-right, 6px) + 12px);
     display:flex;
     align-items:center;
     justify-content:space-between;

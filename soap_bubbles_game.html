@@ -78,7 +78,7 @@
     align-items:center;
     justify-content:space-between;
     gap:2vmin;
-    padding:1.6vmin 3vmin calc(1.6vmin + env(safe-area-inset-bottom));
+    padding:1.6vmin calc(env(safe-area-inset-right, 0px) + 3vmin) calc(1.6vmin + env(safe-area-inset-bottom)) calc(env(safe-area-inset-left, 0px) + 3vmin);
     background:var(--panel);
     backdrop-filter:blur(4px);
     border-top:0.4vmin solid var(--ink);

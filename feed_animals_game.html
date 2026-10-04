@@ -31,7 +31,7 @@
     flex-direction:column;
     justify-content:space-between;
     align-items:center;
-    padding:calc(env(safe-area-inset-top, 6px) + 4px) 12px calc(env(safe-area-inset-bottom, 6px) + 6px);
+    padding:calc(env(safe-area-inset-top, 6px) + 4px) calc(env(safe-area-inset-right, 6px) + 12px) calc(env(safe-area-inset-bottom, 6px) + 6px) calc(env(safe-area-inset-left, 6px) + 12px);
   }
 
   /* Верхняя панель */
@@ -120,6 +120,7 @@
     flex:1.1;
     height:100%;
     max-height:calc(100vh - 80px);
+    max-height:calc(100dvh - 80px);
     background:#FFFFFFD8;
     border:3.5px solid var(--ink);
     border-radius:22px;
@@ -161,6 +162,7 @@
     flex:0.9;
     height:100%;
     max-height:calc(100vh - 80px);
+    max-height:calc(100dvh - 80px);
     background:var(--plate-bg);
     border:3.5px solid var(--ink);
     border-radius:22px;
