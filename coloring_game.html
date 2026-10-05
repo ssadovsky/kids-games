@@ -16,6 +16,7 @@
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
   html,body{
     width:100%; height:100%;
+    min-height:100%;
     overflow:hidden;
     font-family:'Nunito', sans-serif;
     color:var(--ink);
@@ -24,15 +25,20 @@
     -webkit-user-select:none; user-select:none;
   }
   #app{
-    position:relative;
-    width:100vw;
-    height:100vh;
-    height:100dvh;
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
     display:flex;
     flex-direction:column;
     justify-content:space-between;
     align-items:center;
-    padding:calc(env(safe-area-inset-top, 6px) + 6px) 12px calc(env(safe-area-inset-bottom, 6px) + 8px);
+    box-sizing:border-box;
+    padding-top:max(env(safe-area-inset-top, 0px), 6px);
+    padding-bottom:max(env(safe-area-inset-bottom, 0px), 8px);
+    padding-left:max(env(safe-area-inset-left, 0px), 12px);
+    padding-right:max(env(safe-area-inset-right, 0px), 12px);
+    overflow:hidden;
   }
 
   /* Верхняя панель */
@@ -120,7 +126,7 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:4px 0;
+    padding:4px 0 8px 0;
     min-height:0; /* важно для flex в ландшафте */
   }
   .drawing-board{
@@ -130,8 +136,9 @@
     box-shadow:0 6px 0 var(--ink);
     width:100%;
     height:100%;
-    max-height:calc(100vh - 120px);
-    max-height:calc(100dvh - 120px);
+    max-height:100%;
+    min-height:0;
+    box-sizing:border-box;
     display:flex;
     align-items:center;
     justify-content:center;

@@ -16,6 +16,7 @@
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
   html,body{
     width:100%; height:100%;
+    min-height:100%;
     overflow:hidden;
     font-family:'Nunito', sans-serif;
     color:var(--ink);
@@ -24,10 +25,10 @@
     -webkit-user-select:none; user-select:none;
   }
   #app{
-    position:relative;
-    width:100vw;
-    height:100vh;
-    height:100dvh;
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
     overflow:hidden;
   }
   canvas{
@@ -41,8 +42,9 @@
   /* Верхняя панель управления */
   .top-bar{
     position:absolute;
-    top:calc(env(safe-area-inset-top, 6px) + 6px);
-    left:12px; right:12px;
+    top:max(env(safe-area-inset-top, 0px), 8px);
+    left:max(env(safe-area-inset-left, 0px), 12px);
+    right:max(env(safe-area-inset-right, 0px), 12px);
     display:flex;
     align-items:center;
     justify-content:space-between;
