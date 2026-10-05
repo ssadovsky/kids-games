@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Футбол Машинками (Для двоих)</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #2B2140;
+    --blue-team: #3A86FF;
+    --red-team: #FF4757;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    font-family: 'Nunito', sans-serif;
+    color: var(--ink);
+    background: #5CA857;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  #app {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+  }
+
+  /* Верхняя панель */
+  .top-bar {
+    position: absolute;
+    top: max(env(safe-area-inset-top, 0px), 8px);
+    left: max(env(safe-area-inset-left, 0px), 12px);
+    right: max(env(safe-area-inset-right, 0px), 12px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFFE8;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    color: var(--ink);
+    box-shadow: 0 4px 0 var(--ink);
+    cursor: pointer;
+    pointer-events: auto;
+    font-family: 'Comfortaa', cursive;
+    font-weight: 700;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--ink);
+  }
+
+  .btn-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    text-decoration: none;
+  }
+
+  .score-board {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #FFFFFFE6;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    padding: 6px 20px;
+    box-shadow: 0 4px 0 var(--ink);
+    font-family: 'Comfortaa', cursive;
+    font-size: 24px;
+    font-weight: 900;
+  }
+
+  .score-team {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .score-blue { color: var(--blue-team); }
+  .score-red { color: var(--red-team); }
+
+  /* Подсказка снизу о ходе */
+  .hint-bar {
+    position: absolute;
+    bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #FFFFFFF0;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    padding: 6px 22px;
+    font-family: 'Comfortaa', cursive;
+    font-size: 15px;
+    font-weight: 800;
+    box-shadow: 0 4px 0 var(--ink);
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  .hint-blue {
+    background: #EFF6FF;
+    border-color: var(--blue-team);
+    color: var(--blue-team);
+  }
+  .hint-red {
+    background: #FFF1F2;
+    border-color: var(--red-team);
+    color: var(--red-team);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top-bar">
+    <a href="index.html" class="btn btn-icon" title="В меню">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </a>
+
+    <div class="score-board">
+      <div class="score-team score-blue">
+        <span>🚙</span>
+        <span id="score1">0</span>
+      </div>
+      <span style="color:#A0AEC0;">:</span>
+      <div class="score-team score-red">
+        <span id="score2">0</span>
+        <span>🚗</span>
+      </div>
+    </div>
+
+    <!-- Заглушка для центровки -->
+    <div style="width: 46px;"></div>
+  </div>
+
+  <div class="hint-bar" id="hintBar">
+    Ставь палец на машинку и толкай мяч в ворота! ⚽
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+// --- ЗВУКОВОЙ ДВИЖОК (Web Audio API) ---
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+    this.lastBumpTime = 0;
+    this.lastHitTime = 0;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  // Мягкий глухой удар по мячу («Тук»)
+  hit() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    // Защита от пулеметного треска (cooldown 120ms)
+    if (now - this.lastHitTime < 0.12) return;
+    this.lastHitTime = now;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    // Низкий бархатный бас без высоких частот
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.09);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.09);
+  }
+
+  // Столкновение машинок: приятный мягкий "Буп!" как у детской деревянной маримбы/ксилофона
+  bump() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    // Строгий кулдаун 200ms - исключает повторный скрежет при соприкосновении
+    if (now - this.lastBumpTime < 0.20) return;
+    this.lastBumpTime = now;
+
+    // Две мягкие гармоники как у маримбы/детской игрушки
+    [220, 440].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.85, now + 0.12);
+      const vol = idx === 0 ? 0.22 : 0.08;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    });
+  }
+
+  // Приятный колокольчик сигнала хода ("Динь-дилинь!")
+  turnAlert() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const notes = [659.25, 880]; // E5, A5
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.09);
+      gain.gain.setValueAtTime(0.16, now + i * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.28);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + i * 0.09);
+      osc.stop(now + i * 0.09 + 0.28);
+    });
+  }
+
+  // Весёлый отскок мячика при авто-пасе к центру ("Плим-вжух!")
+  ballJump() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(820, now + 0.22);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
+  // ГОООЛ! Победный аккорд
+  goal() {
+    this.init();
+    if (!this.ctx) return;
+    const notes = [392, 523.25, 659.25, 783.99];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.08);
+      gain.gain.setValueAtTime(0.25, this.ctx.currentTime + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.08 + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(this.ctx.currentTime + i * 0.08);
+      osc.stop(this.ctx.currentTime + i * 0.08 + 0.35);
+    });
+  }
+}
+
+const sfx = new SoundFX();
+
+// --- ПЕРЕМЕННЫЕ И ХОЛСТ ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const score1El = document.getElementById('score1');
+const score2El = document.getElementById('score2');
+const hintBar = document.getElementById('hintBar');
+
+let width = window.innerWidth;
+let height = window.innerHeight;
+let dpr = window.devicePixelRatio || 1;
+
+let score1 = 0;
+let score2 = 0;
+let goalCelebration = 0;
+let particles = [];
+
+// Определение хода при остановке мяча
+let currentTurn = null; // 'blue' | 'red' | 'both' | null
+let ballStoppedTimestamp = null; // реальное время Date.now()
+let turnAlertPlayed = false;
+const AUTO_PASS_DELAY = 8000; // 8 честных секунд реального времени (не зависит от 120/144 Гц)
+
+function resize() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.scale(dpr, dpr);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Игровые объекты
+const ball = {
+  x: width / 2,
+  y: height / 2,
+  radius: 34,
+  vx: 0,
+  vy: 0,
+  friction: 0.985,
+  rotation: 0
+};
+
+// Синяя машинка (слева)
+const car1 = {
+  id: 1,
+  x: width * 0.22,
+  y: height / 2,
+  targetX: width * 0.22,
+  targetY: height / 2,
+  radius: 46,
+  color: '#3A86FF',
+  lightColor: '#93C5FD',
+  touchId: null,
+  angle: 0
+};
+
+// Красная машинка (справа)
+const car2 = {
+  id: 2,
+  x: width * 0.78,
+  y: height / 2,
+  targetX: width * 0.78,
+  targetY: height / 2,
+  radius: 46,
+  color: '#FF4757',
+  lightColor: '#FFA1A8',
+  touchId: null,
+  angle: Math.PI
+};
+
+const goalSize = {
+  width: 28,
+  height: 220
+};
+
+function resetPositions() {
+  ball.x = width / 2;
+  ball.y = height / 2;
+  ball.vx = 0;
+  ball.vy = 0;
+
+  car1.x = width * 0.22;
+  car1.y = height / 2;
+  car1.targetX = car1.x;
+  car1.targetY = car1.y;
+  car1.angle = 0;
+
+  car2.x = width * 0.78;
+  car2.y = height / 2;
+  car2.targetX = car2.x;
+  car2.targetY = car2.y;
+  car2.angle = Math.PI;
+
+  currentTurn = 'both';
+  turnAlertPlayed = true;
+  updateHint();
+}
+
+function updateHint() {
+  hintBar.className = 'hint-bar';
+  if (currentTurn === 'blue') {
+    hintBar.classList.add('hint-blue');
+    hintBar.innerHTML = '👉 Твой ход, Синяя машинка! 🚙';
+  } else if (currentTurn === 'red') {
+    hintBar.classList.add('hint-red');
+    hintBar.innerHTML = '👉 Твой ход, Красная машинка! 🚗';
+  } else if (currentTurn === 'both') {
+    hintBar.innerHTML = '⚽ Мяч в центре! Толкайте! 🚀';
+  } else {
+    hintBar.innerHTML = 'Толкай мяч в ворота соперника! ⚽';
+  }
+}
+
+// Салют при голе
+function spawnConfetti(x, y) {
+  const colors = ['#FFD166', '#EF476F', '#06D6A0', '#118AB2', '#F78C6B'];
+  for (let i = 0; i < 70; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 4 + Math.random() * 9;
+    particles.push({
+      x: x,
+      y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: 7 + Math.random() * 8,
+      life: 1.0,
+      rot: Math.random() * Math.PI,
+      vRot: (Math.random() - 0.5) * 0.2
+    });
+  }
+}
+
+// --- УПРАВЛЕНИЕ: МУЛЬТИТАЧ ДЛЯ ПЛАНШЕТОВ / СМАРТФОНОВ ---
+function getTouchPos(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
+}
+
+// Умный выбор машинки по координатам клика/тача
+function getCarAtPoint(x, y) {
+  const d1 = Math.hypot(x - car1.x, y - car1.y);
+  const d2 = Math.hypot(x - car2.x, y - car2.y);
+
+  // 1. Если кликнули прямо по красной машинке
+  if (d2 < car2.radius * 2.2 && d2 <= d1) return car2;
+  // 2. Если кликнули прямо по синей машинке
+  if (d1 < car1.radius * 2.2) return car1;
+
+  // 3. Если сейчас объявлен ход конкретной машинки
+  if (currentTurn === 'red') return car2;
+  if (currentTurn === 'blue') return car1;
+
+  // 4. Иначе по расстоянию или половине поля
+  return (d1 <= d2) ? car1 : car2;
+}
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  sfx.init();
+
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const touch = e.changedTouches[i];
+    const pos = getTouchPos(touch);
+
+    const d1 = Math.hypot(pos.x - car1.x, pos.y - car1.y);
+    const d2 = Math.hypot(pos.x - car2.x, pos.y - car2.y);
+
+    // Прямой тап по красной машинке
+    if (d2 < car2.radius * 2.0 && car2.touchId === null) {
+      car2.touchId = touch.identifier;
+      car2.targetX = pos.x;
+      car2.targetY = pos.y;
+    }
+    // Прямой тап по синей машинке
+    else if (d1 < car1.radius * 2.0 && car1.touchId === null) {
+      car1.touchId = touch.identifier;
+      car1.targetX = pos.x;
+      car1.targetY = pos.y;
+    }
+    // Тап по свободной правой половине
+    else if (pos.x >= width * 0.5 && car2.touchId === null) {
+      car2.touchId = touch.identifier;
+      car2.targetX = pos.x;
+      car2.targetY = pos.y;
+    }
+    // Тап по свободной левой половине
+    else if (pos.x < width * 0.5 && car1.touchId === null) {
+      car1.touchId = touch.identifier;
+      car1.targetX = pos.x;
+      car1.targetY = pos.y;
+    }
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const touch = e.changedTouches[i];
+    const pos = getTouchPos(touch);
+
+    if (touch.identifier === car1.touchId) {
+      car1.targetX = Math.max(car1.radius + 15, Math.min(width * 0.58, pos.x));
+      car1.targetY = Math.max(car1.radius + 15, Math.min(height - car1.radius - 15, pos.y));
+    }
+    if (touch.identifier === car2.touchId) {
+      car2.targetX = Math.min(width - car2.radius - 15, Math.max(width * 0.42, pos.x));
+      car2.targetY = Math.max(car2.radius + 15, Math.min(height - car2.radius - 15, pos.y));
+    }
+  }
+}, { passive: false });
+
+function endTouch(touch) {
+  if (touch.identifier === car1.touchId) car1.touchId = null;
+  if (touch.identifier === car2.touchId) car2.touchId = null;
+}
+canvas.addEventListener('touchend', (e) => {
+  for (let i = 0; i < e.changedTouches.length; i++) endTouch(e.changedTouches[i]);
+});
+canvas.addEventListener('touchcancel', (e) => {
+  for (let i = 0; i < e.changedTouches.length; i++) endTouch(e.changedTouches[i]);
+});
+
+// --- УПРАВЛЕНИЕ НА ПК (МЫШЬ + КЛАВИАТУРА) ---
+let mouseDraggingCar = null;
+
+canvas.addEventListener('mousedown', (e) => {
+  sfx.init();
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  mouseDraggingCar = getCarAtPoint(mx, my);
+
+  if (mouseDraggingCar === car1) {
+    car1.targetX = Math.max(car1.radius + 15, Math.min(width * 0.58, mx));
+    car1.targetY = Math.max(car1.radius + 15, Math.min(height - car1.radius - 15, my));
+  } else if (mouseDraggingCar === car2) {
+    car2.targetX = Math.min(width - car2.radius - 15, Math.max(width * 0.42, mx));
+    car2.targetY = Math.max(car2.radius + 15, Math.min(height - car2.radius - 15, my));
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!mouseDraggingCar) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  if (mouseDraggingCar === car1) {
+    car1.targetX = Math.max(car1.radius + 15, Math.min(width * 0.58, mx));
+    car1.targetY = Math.max(car1.radius + 15, Math.min(height - car1.radius - 15, my));
+  } else if (mouseDraggingCar === car2) {
+    car2.targetX = Math.min(width - car2.radius - 15, Math.max(width * 0.42, mx));
+    car2.targetY = Math.max(car2.radius + 15, Math.min(height - car2.radius - 15, my));
+  }
+});
+
+window.addEventListener('mouseup', () => { mouseDraggingCar = null; });
+
+// Клавиатура: Игрок 1 (WASD), Игрок 2 (Стрелочки)
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  sfx.init();
+  keys[e.code] = true;
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+});
+
+function handleKeyboard() {
+  const step = 9;
+  if (keys['KeyW']) car1.targetY = Math.max(car1.radius + 15, car1.targetY - step);
+  if (keys['KeyS']) car1.targetY = Math.min(height - car1.radius - 15, car1.targetY + step);
+  if (keys['KeyA']) car1.targetX = Math.max(car1.radius + 15, car1.targetX - step);
+  if (keys['KeyD']) car1.targetX = Math.min(width * 0.56, car1.targetX + step);
+
+  if (keys['ArrowUp']) car2.targetY = Math.max(car2.radius + 15, car2.targetY - step);
+  if (keys['ArrowDown']) car2.targetY = Math.min(height - car2.radius - 15, car2.targetY + step);
+  if (keys['ArrowLeft']) car2.targetX = Math.max(width * 0.44, car2.targetX - step);
+  if (keys['ArrowRight']) car2.targetX = Math.min(width - car2.radius - 15, car2.targetX + step);
+}
+
+// Физика столкновения кругов
+function resolveCircleCollision(c1, c2, restitution) {
+  const dx = c2.x - c1.x;
+  const dy = c2.y - c1.y;
+  const dist = Math.hypot(dx, dy);
+  const minDist = c1.radius + c2.radius;
+
+  if (dist < minDist && dist > 0) {
+    const nx = dx / dist;
+    const ny = dy / dist;
+    const overlap = minDist - dist;
+
+    c1.x -= nx * overlap * 0.5;
+    c1.y -= ny * overlap * 0.5;
+    c2.x += nx * overlap * 0.5;
+    c2.y += ny * overlap * 0.5;
+    return { hit: true, nx, ny };
+  }
+  return { hit: false };
+}
+
+// Обновление состояния
+function update() {
+  handleKeyboard();
+
+  // Плавное следование машинок за целевой точкой
+  const lerp = 0.28;
+  const prevX1 = car1.x;
+  const prevY1 = car1.y;
+  car1.x += (car1.targetX - car1.x) * lerp;
+  car1.y += (car1.targetY - car1.y) * lerp;
+  const vx1 = car1.x - prevX1;
+  const vy1 = car1.y - prevY1;
+  if (Math.hypot(vx1, vy1) > 0.5) car1.angle = Math.atan2(vy1, vx1);
+
+  const prevX2 = car2.x;
+  const prevY2 = car2.y;
+  car2.x += (car2.targetX - car2.x) * lerp;
+  car2.y += (car2.targetY - car2.y) * lerp;
+  const vx2 = car2.x - prevX2;
+  const vy2 = car2.y - prevY2;
+  if (Math.hypot(vx2, vy2) > 0.5) car2.angle = Math.atan2(vy2, vx2);
+
+  // Столкновение машинок (мягкий "пуньк")
+  const bump = resolveCircleCollision(car1, car2, 0.8);
+  if (bump.hit) sfx.bump();
+
+  // Движение мяча
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+  ball.vx *= ball.friction;
+  ball.vy *= ball.friction;
+  ball.rotation += (Math.abs(ball.vx) + Math.abs(ball.vy)) * 0.02;
+
+  // Определение остановки мяча, чей ход и авто-пас (по честным секундам performance.now)
+  const ballSpeed = Math.hypot(ball.vx, ball.vy);
+  if (ballSpeed < 0.28 && goalCelebration <= 0) {
+    const now = performance.now();
+    if (!ballStoppedTimestamp) {
+      ballStoppedTimestamp = now;
+    }
+
+    const stoppedDuration = now - ballStoppedTimestamp;
+
+    // Через 400 мс покоя объявляем чей ход
+    if (stoppedDuration > 400 && stoppedDuration < AUTO_PASS_DELAY) {
+      let newTurn = null;
+      if (ball.x < width * 0.46) {
+        newTurn = 'blue';
+      } else if (ball.x > width * 0.54) {
+        newTurn = 'red';
+      } else {
+        newTurn = 'both';
+      }
+
+      if (currentTurn !== newTurn || !turnAlertPlayed) {
+        currentTurn = newTurn;
+        turnAlertPlayed = true;
+        sfx.turnAlert();
+        updateHint();
+      }
+    }
+
+    // Если прошло честных 8 секунд бездействия (не зависит от 120/144 Гц)
+    if (stoppedDuration >= AUTO_PASS_DELAY) {
+      const distFromCenter = Math.hypot(ball.x - width / 2, ball.y - height / 2);
+      if (distFromCenter > 50) {
+        const dx = (width / 2) - ball.x;
+        const dy = (height / 2) - ball.y;
+        const dist = Math.hypot(dx, dy);
+
+        // Мягкий плавный пас к центральному кругу
+        ball.vx = (dx / dist) * 6.5;
+        ball.vy = (dy / dist) * 4.5;
+        sfx.ballJump();
+
+        // Весёлые звёздочки от мяча
+        for (let i = 0; i < 10; i++) {
+          particles.push({
+            x: ball.x,
+            y: ball.y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6 - 2,
+            size: 7,
+            color: '#FFD166',
+            life: 0.85
+          });
+        }
+
+        currentTurn = 'both';
+        updateHint();
+      }
+      ballStoppedTimestamp = null;
+      turnAlertPlayed = false;
+    }
+  } else {
+    if (ballSpeed >= 0.5) {
+      ballStoppedTimestamp = null;
+      if (currentTurn !== null) {
+        currentTurn = null;
+        turnAlertPlayed = false;
+        updateHint();
+      }
+    }
+  }
+
+  // Удары по мячу
+  const hit1 = resolveCircleCollision(car1, ball, 1.2);
+  if (hit1.hit) {
+    ball.vx += vx1 * 1.5 + hit1.nx * 6;
+    ball.vy += vy1 * 1.5 + hit1.ny * 6;
+    sfx.hit();
+  }
+
+  const hit2 = resolveCircleCollision(car2, ball, 1.2);
+  if (hit2.hit) {
+    ball.vx += vx2 * 1.5 + hit2.nx * 6;
+    ball.vy += vy2 * 1.5 + hit2.ny * 6;
+    sfx.hit();
+  }
+
+  // Границы поля: верх и низ
+  const marginY = 46;
+  if (ball.y - ball.radius < marginY) {
+    const oldVy = ball.vy;
+    ball.y = marginY + ball.radius;
+    ball.vy = -ball.vy * 0.85;
+    if (Math.abs(oldVy) > 1.2) sfx.hit();
+  } else if (ball.y + ball.radius > height - marginY) {
+    const oldVy = ball.vy;
+    ball.y = height - marginY - ball.radius;
+    ball.vy = -ball.vy * 0.85;
+    if (Math.abs(oldVy) > 1.2) sfx.hit();
+  }
+
+  // Проверка голов
+  const goalH = Math.min(height * 0.5, 220);
+  const goalTop = height / 2 - goalH / 2;
+  const goalBottom = height / 2 + goalH / 2;
+
+  // Левые ворота (забил Красный)
+  if (ball.x - ball.radius <= 24) {
+    if (ball.y >= goalTop && ball.y <= goalBottom) {
+      if (goalCelebration <= 0) {
+        score2++;
+        score2El.textContent = score2;
+        sfx.goal();
+        spawnConfetti(60, height / 2);
+        goalCelebration = 65;
+      }
+    } else {
+      const oldVx = ball.vx;
+      ball.x = 24 + ball.radius;
+      ball.vx = -ball.vx * 0.85;
+      if (Math.abs(oldVx) > 1.2) sfx.hit();
+    }
+  }
+
+  // Правые ворота (забил Синий)
+  if (ball.x + ball.radius >= width - 24) {
+    if (ball.y >= goalTop && ball.y <= goalBottom) {
+      if (goalCelebration <= 0) {
+        score1++;
+        score1El.textContent = score1;
+        sfx.goal();
+        spawnConfetti(width - 60, height / 2);
+        goalCelebration = 65;
+      }
+    } else {
+      const oldVx = ball.vx;
+      ball.x = width - 24 - ball.radius;
+      ball.vx = -ball.vx * 0.85;
+      if (Math.abs(oldVx) > 1.2) sfx.hit();
+    }
+  }
+
+  // Таймер салюта и сброс позиций
+  if (goalCelebration > 0) {
+    goalCelebration--;
+    if (goalCelebration === 1) resetPositions();
+  }
+
+  // Частицы салюта
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2;
+    p.rot += p.vRot;
+    p.life -= 0.015;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+// Отрисовка поля
+function drawField() {
+  const stripeW = width / 10;
+  for (let i = 0; i < 10; i++) {
+    ctx.fillStyle = i % 2 === 0 ? '#6DBE68' : '#7BC676';
+    ctx.fillRect(i * stripeW, 0, stripeW, height);
+  }
+
+  // Подсветка половин
+  ctx.fillStyle = 'rgba(58, 134, 255, 0.05)';
+  ctx.fillRect(0, 0, width / 2, height);
+  ctx.fillStyle = 'rgba(255, 71, 87, 0.05)';
+  ctx.fillRect(width / 2, 0, width / 2, height);
+
+  ctx.strokeStyle = '#FFFFFF88';
+  ctx.lineWidth = 5;
+
+  // Центральная линия
+  ctx.beginPath();
+  ctx.setLineDash([10, 10]);
+  ctx.moveTo(width / 2, 0);
+  ctx.lineTo(width / 2, height);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Центральный круг
+  ctx.beginPath();
+  ctx.arc(width / 2, height / 2, 75, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Ворота СЛЕВА (Синие)
+  const goalH = Math.min(height * 0.5, 220);
+  const goalTop = height / 2 - goalH / 2;
+  ctx.strokeStyle = '#3A86FF';
+  ctx.fillStyle = '#FFFFFF33';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(0, goalTop, 26, goalH, [0, 16, 16, 0]);
+  ctx.fill();
+  ctx.stroke();
+
+  // Ворота СПРАВА (Красные)
+  ctx.strokeStyle = '#FF4757';
+  ctx.beginPath();
+  ctx.roundRect(width - 26, goalTop, 26, goalH, [16, 0, 0, 16]);
+  ctx.fill();
+  ctx.stroke();
+}
+
+// Отрисовка Машинки с визуальным сигналом хода
+function drawCar(car) {
+  const isMyTurn = (currentTurn === 'both') || 
+                   (car.id === 1 && currentTurn === 'blue') || 
+                   (car.id === 2 && currentTurn === 'red');
+
+  const now = Date.now();
+  const pulse = Math.sin(now * 0.008) * 0.5 + 0.5; // от 0 до 1
+
+  ctx.save();
+  ctx.translate(car.x, car.y);
+
+  // СИГНАЛ ХОДА: Пульсирующий сияющий ореол вокруг машинки
+  if (isMyTurn) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, car.radius + 12 + pulse * 10, 0, Math.PI * 2);
+    ctx.strokeStyle = car.color;
+    ctx.lineWidth = 4 + pulse * 3;
+    ctx.globalAlpha = 0.4 + pulse * 0.5;
+    ctx.setLineDash([8, 6]);
+    ctx.stroke();
+    ctx.restore();
+
+    // Мультяшная подсказка-стрелочка над машинкой «Твой ход! ⬇️»
+    ctx.save();
+    const arrowBounce = Math.sin(now * 0.012) * 6;
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('👇', 0, -car.radius - 22 + arrowBounce);
+    ctx.restore();
+  }
+
+  ctx.rotate(car.angle);
+
+  // Тень
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+  ctx.beginPath();
+  ctx.ellipse(0, 6, car.radius + 4, car.radius - 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Резиновый бампер
+  ctx.fillStyle = '#2B2140';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, car.radius + 3, car.radius - 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Кузов
+  ctx.fillStyle = car.color;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, car.radius - 2, car.radius - 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Блик
+  ctx.fillStyle = car.lightColor;
+  ctx.beginPath();
+  ctx.ellipse(2, -4, car.radius * 0.55, car.radius * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Лобовое стекло
+  ctx.fillStyle = '#2B2140';
+  ctx.beginPath();
+  ctx.roundRect(8, -16, 14, 32, 6);
+  ctx.fill();
+  ctx.fillStyle = '#E0F2FE';
+  ctx.beginPath();
+  ctx.roundRect(10, -14, 10, 28, 4);
+  ctx.fill();
+
+  // Глазки
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(car.radius - 8, -12, 6, 0, Math.PI * 2);
+  ctx.arc(car.radius - 8, 12, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#2B2140';
+  ctx.beginPath();
+  ctx.arc(car.radius - 6, -12, 3, 0, Math.PI * 2);
+  ctx.arc(car.radius - 6, 12, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Колеса
+  ctx.fillStyle = '#1E1E24';
+  const rw = 18; const rh = 9;
+  ctx.fillRect(-car.radius * 0.5, -car.radius + 2, rw, rh);
+  ctx.fillRect(-car.radius * 0.5, car.radius - 11, rw, rh);
+  ctx.fillRect(car.radius * 0.15, -car.radius + 2, rw, rh);
+  ctx.fillRect(car.radius * 0.15, car.radius - 11, rw, rh);
+
+  ctx.restore();
+}
+
+// Отрисовка Мяча
+function drawBall() {
+  const isStopped = currentTurn !== null;
+  const pulse = Math.sin(Date.now() * 0.008) * 0.5 + 0.5;
+
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+
+  // Если мяч остановился - подсвечиваем его сиянием и показываем кольцо таймера
+  if (isStopped) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.radius + 8 + pulse * 6, 0, Math.PI * 2);
+    ctx.strokeStyle = '#FFD166';
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.5 + pulse * 0.5;
+    ctx.stroke();
+    ctx.restore();
+
+    if (ballStoppedTimestamp) {
+      const elapsed = performance.now() - ballStoppedTimestamp;
+      const progress = Math.min(1, elapsed / AUTO_PASS_DELAY);
+      // Мягкое круговое кольцо времени вокруг мяча
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, ball.radius + 15, -Math.PI / 2, -Math.PI / 2 + (1 - progress) * Math.PI * 2, false);
+      ctx.strokeStyle = '#38BDF8';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  ctx.rotate(ball.rotation);
+
+  // Тень
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+  ctx.beginPath();
+  ctx.ellipse(0, 8, ball.radius, ball.radius * 0.65, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Мяч
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#2B2140';
+  ctx.stroke();
+
+  // Пятнышки
+  ctx.fillStyle = '#2B2140';
+  ctx.beginPath();
+  ctx.arc(0, 0, ball.radius * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Глазки
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(-7, -4, 5, 0, Math.PI * 2);
+  ctx.arc(7, -4, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#2B2140';
+  ctx.beginPath();
+  ctx.arc(-6, -4, 2.5, 0, Math.PI * 2);
+  ctx.arc(6, -4, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#2B2140';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 2, 4, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life;
+    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+    ctx.restore();
+  }
+}
+
+function loop() {
+  update();
+  ctx.clearRect(0, 0, width, height);
+
+  drawField();
+  drawBall();
+  drawCar(car1);
+  drawCar(car2);
+  drawParticles();
+
+  requestAnimationFrame(loop);
+}
+
+resetPositions();
+loop();
+</script>
+</body>
+</html>
