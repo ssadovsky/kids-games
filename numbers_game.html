@@ -144,16 +144,41 @@
     height:100%;
     overflow:visible;
   }
-  .dot-circle{
+  .dot-group{
     cursor:pointer;
-    transition:transform .15s ease;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .dot-circle{
+    transition:r .22s cubic-bezier(0.175, 0.885, 0.32, 1.275), fill .2s ease, stroke .2s ease, stroke-width .2s ease;
   }
   .dot-circle.target{
+    transform-box:fill-box;
+    transform-origin:center;
     animation:pulse-dot 0.8s infinite alternate;
   }
   @keyframes pulse-dot{
     from{ transform:scale(1); }
-    to{ transform:scale(1.28); }
+    to{ transform:scale(1.24); }
+  }
+
+  /* Выделение и увеличение кружка пока он говорит число */
+  .dot-group.speaking .dot-circle{
+    r:21px !important;
+    fill:#FFD23F !important;
+    stroke:#FF4757 !important;
+    stroke-width:3.8px !important;
+    filter:drop-shadow(0 0 8px rgba(255, 71, 87, 0.85));
+  }
+  .dot-group.speaking .dot-text{
+    font-size:15px !important;
+    font-weight:900 !important;
+    fill:#2B2140 !important;
+  }
+  .dot-text{
+    pointer-events:none;
+    user-select:none;
+    transition:font-size .22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   /* РЕЖИМ 2: Посчитай предметы */
@@ -387,7 +412,7 @@
     </a>
 
     <div class="modes-bar">
-      <button class="mode-tab active" data-mode="dots">🌟 Соедини 20–40</button>
+      <button class="mode-tab active" data-mode="dots">🌟 Соедини 20–100</button>
       <button class="mode-tab" data-mode="count">🍎 Посчитай</button>
       <button class="mode-tab" data-mode="compare">⚖️ Где больше?</button>
     </div>
@@ -526,20 +551,55 @@ if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = loadRussianVoices;
 }
 
-function speakNumber(num) {
-  if (!('speechSynthesis' in window)) return;
+let currentUtterance = null;
+let speechSafetyTimer = null;
+
+function speakNumber(num, onComplete) {
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    if (speechSafetyTimer) {
+      clearTimeout(speechSafetyTimer);
+      speechSafetyTimer = null;
+    }
+    currentUtterance = null;
+    if (typeof onComplete === 'function') {
+      onComplete();
+    }
+  };
+
+  // Страховочный таймер: максимум 1.5 сек на случай сбоев speechSynthesis
+  speechSafetyTimer = setTimeout(finish, 1400);
+
+  if (!('speechSynthesis' in window)) {
+    setTimeout(finish, 600);
+    return;
+  }
+
   try {
-    window.speechSynthesis.cancel(); // сброс очереди
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(String(num));
+    currentUtterance = utterance; // Защита от GC в движке Chrome
     utterance.lang = 'ru-RU';
     if (russianFemaleVoice) {
       utterance.voice = russianFemaleVoice;
     }
-    // Приятный, чуть приподнятый женственный тембр
-    utterance.pitch = 1.18;
-    utterance.rate = 1.0;
+    // Приятный, чуть приподнятый женственный тембр и четкая скорость
+    utterance.pitch = 1.15;
+    utterance.rate = 0.95;
+
+    utterance.onend = () => {
+      finish();
+    };
+    utterance.onerror = () => {
+      finish();
+    };
+
     window.speechSynthesis.speak(utterance);
-  } catch (err) {}
+  } catch (err) {
+    finish();
+  }
 }
 
 function lockLandscape() {
@@ -579,118 +639,138 @@ function fireConfetti() {
 }
 
 // -------------------------------------------------------------
-// РЕЖИМ 1: СОЕДИНИ ТОЧКИ ОТ 20 ДО 40
+// РЕЖИМ 1: СОЕДИНИ ТОЧКИ (20–40, 40–60, 60–80, 80–100)
 // -------------------------------------------------------------
 const DOT_FIGURES = [
-  {
-    name: 'Звёздочка',
-    icon: '⭐',
-    color: '#FFD23F',
-    // 20 точек: счёт от 20 до 39! Идеальная 10-лучевая звезда, расстояние между соседями ~65px
-    points: [
-      {x: 270, y: 22},  // 20 (верхний луч)
-      {x: 288, y: 85},  // 21
-      {x: 339, y: 45},  // 22
-      {x: 317, y: 106}, // 23
-      {x: 382, y: 104}, // 24
-      {x: 328, y: 140}, // 25
-      {x: 382, y: 176}, // 26
-      {x: 317, y: 174}, // 27
-      {x: 339, y: 235}, // 28
-      {x: 288, y: 195}, // 29
-      {x: 270, y: 258}, // 30 (нижний луч)
-      {x: 252, y: 195}, // 31
-      {x: 201, y: 235}, // 32
-      {x: 223, y: 174}, // 33
-      {x: 158, y: 176}, // 34
-      {x: 212, y: 140}, // 35
-      {x: 158, y: 104}, // 36
-      {x: 223, y: 106}, // 37
-      {x: 201, y: 45},  // 38
-      {x: 252, y: 85}   // 39
-    ]
-  },
   {
     name: 'Ракета',
     icon: '🚀',
     color: '#4D96FF',
-    // 18 точек: счёт от 20 до 37, расстояния 55-90px
+    startNum: 20,
+    endNum: 40,
+    // 21 точка: счёт от 20 до 40
     points: [
       {x: 270, y: 24},  // 20 (верхушка)
-      {x: 330, y: 74},  // 21
-      {x: 360, y: 140}, // 22
-      {x: 360, y: 200}, // 23
-      {x: 450, y: 235}, // 24 (крыло право)
-      {x: 405, y: 265}, // 25
-      {x: 345, y: 235}, // 26
-      {x: 310, y: 235}, // 27
-      {x: 290, y: 268}, // 28 (огонь)
-      {x: 270, y: 245}, // 29
-      {x: 250, y: 268}, // 30 (огонь)
-      {x: 230, y: 235}, // 31
-      {x: 195, y: 235}, // 32
-      {x: 135, y: 265}, // 33
-      {x: 90, y: 235},  // 34 (крыло лево)
-      {x: 180, y: 200}, // 35
-      {x: 180, y: 140}, // 36
-      {x: 210, y: 74}   // 37
+      {x: 305, y: 52},  // 21
+      {x: 332, y: 95},  // 22
+      {x: 345, y: 145}, // 23
+      {x: 350, y: 195}, // 24
+      {x: 435, y: 225}, // 25 (крыло право)
+      {x: 405, y: 258}, // 26
+      {x: 355, y: 238}, // 27
+      {x: 320, y: 238}, // 28
+      {x: 295, y: 268}, // 29 (огонь право)
+      {x: 270, y: 245}, // 30 (огонь центр)
+      {x: 245, y: 268}, // 31 (огонь лево)
+      {x: 220, y: 238}, // 32
+      {x: 185, y: 238}, // 33
+      {x: 135, y: 258}, // 34
+      {x: 105, y: 225}, // 35 (крыло лево)
+      {x: 190, y: 195}, // 36
+      {x: 195, y: 145}, // 37
+      {x: 208, y: 95},  // 38
+      {x: 235, y: 52},  // 39
+      {x: 252, y: 30}   // 40
     ]
   },
   {
     name: 'Кораблик',
     icon: '⛵',
     color: '#00C897',
-    // 17 точек: счёт от 20 до 36, расстояния 55-100px
+    startNum: 40,
+    endNum: 60,
+    // 21 точка: счёт от 40 до 60
     points: [
-      {x: 270, y: 32},  // 20 (парус верхушка)
-      {x: 370, y: 95},  // 21
-      {x: 440, y: 158}, // 22 (парус право низ)
-      {x: 350, y: 158}, // 23
-      {x: 280, y: 158}, // 24
-      {x: 460, y: 170}, // 25 (палуба нос)
-      {x: 505, y: 215}, // 26 (нос острие)
-      {x: 430, y: 255}, // 27 (дно право)
-      {x: 350, y: 255}, // 28
-      {x: 270, y: 255}, // 29
-      {x: 190, y: 255}, // 30
-      {x: 110, y: 255}, // 31 (дно лево)
-      {x: 55, y: 215},  // 32 (корма острие)
-      {x: 80, y: 170},  // 33 (корма палуба)
-      {x: 260, y: 170}, // 34
-      {x: 120, y: 158}, // 35 (парус лево низ)
-      {x: 185, y: 95}   // 36
+      {x: 270, y: 22},  // 40 (флажок мачта)
+      {x: 310, y: 32},  // 41 (флажок острие)
+      {x: 270, y: 44},  // 42 (флажок основание)
+      {x: 345, y: 95},  // 43 (правый парус)
+      {x: 425, y: 155}, // 44
+      {x: 350, y: 155}, // 45
+      {x: 280, y: 155}, // 46 (мачта низ)
+      {x: 385, y: 170}, // 47 (палуба нос)
+      {x: 475, y: 175}, // 48
+      {x: 510, y: 215}, // 49 (нос корабля острие)
+      {x: 450, y: 255}, // 50 (дно нос)
+      {x: 370, y: 260}, // 51
+      {x: 270, y: 260}, // 52 (дно центр)
+      {x: 170, y: 260}, // 53
+      {x: 90, y: 255},  // 54 (дно корма)
+      {x: 30, y: 215},  // 55 (корма острие)
+      {x: 65, y: 175},  // 56
+      {x: 155, y: 170}, // 57 (палуба лево)
+      {x: 260, y: 155}, // 58
+      {x: 135, y: 155}, // 59 (левый парус низ)
+      {x: 200, y: 88}   // 60 (левый парус верх)
     ]
   },
   {
     name: 'Грузовичок',
     icon: '🚚',
     color: '#FF6B6B',
-    // 17 точек: счёт от 20 до 36, расстояния 50-90px
+    startNum: 60,
+    endNum: 80,
+    // 21 точка: счёт от 60 до 80
     points: [
-      {x: 60, y: 220},  // 20 (передний бампер)
-      {x: 60, y: 155},  // 21 (капот)
-      {x: 140, y: 155}, // 22
-      {x: 190, y: 80},  // 23 (лобовое стекло)
-      {x: 260, y: 80},  // 24 (крыша кабины)
-      {x: 260, y: 45},  // 25 (кузов верх лево)
-      {x: 370, y: 45},  // 26
-      {x: 480, y: 45},  // 27 (кузов верх право)
-      {x: 480, y: 140}, // 28
-      {x: 480, y: 220}, // 29 (задний бампер)
-      {x: 420, y: 220}, // 30
-      {x: 380, y: 175}, // 31 (заднее колесо)
-      {x: 320, y: 175}, // 32
-      {x: 280, y: 220}, // 33
-      {x: 200, y: 220}, // 34
-      {x: 160, y: 175}, // 35 (переднее колесо)
-      {x: 100, y: 175}  // 36
+      {x: 50, y: 225},  // 60 (передний бампер)
+      {x: 50, y: 160},  // 61 (капот)
+      {x: 125, y: 160}, // 62
+      {x: 170, y: 95},  // 63 (лобовое стекло)
+      {x: 235, y: 95},  // 64 (крыша)
+      {x: 235, y: 55},  // 65 (кузов верх лево)
+      {x: 320, y: 55},  // 66
+      {x: 410, y: 55},  // 67
+      {x: 495, y: 55},  // 68 (кузов верх право)
+      {x: 495, y: 140}, // 69
+      {x: 495, y: 225}, // 70 (задний бампер)
+      {x: 445, y: 225}, // 71
+      {x: 415, y: 178}, // 72 (заднее колесо право)
+      {x: 375, y: 178}, // 73 (заднее колесо лево)
+      {x: 345, y: 225}, // 74
+      {x: 290, y: 225}, // 75 (бензобак)
+      {x: 240, y: 225}, // 76
+      {x: 205, y: 178}, // 77 (переднее колесо право)
+      {x: 165, y: 178}, // 78 (переднее колесо лево)
+      {x: 135, y: 225}, // 79
+      {x: 90, y: 225}   // 80 (фартук)
+    ]
+  },
+  {
+    name: 'Корона',
+    icon: '👑',
+    color: '#FFD23F',
+    startNum: 80,
+    endNum: 100,
+    // 21 точка: счёт от 80 до 100
+    points: [
+      {x: 60, y: 240},  // 80 (основание край лево)
+      {x: 115, y: 240}, // 81
+      {x: 170, y: 240}, // 82
+      {x: 225, y: 240}, // 83
+      {x: 270, y: 240}, // 84 (основание центр)
+      {x: 315, y: 240}, // 85
+      {x: 370, y: 240}, // 86
+      {x: 425, y: 240}, // 87
+      {x: 480, y: 240}, // 88 (основание край право)
+      {x: 465, y: 180}, // 89 (боковина право)
+      {x: 510, y: 105}, // 90 (правый зубец пик)
+      {x: 440, y: 145}, // 91 (впадина 1)
+      {x: 400, y: 70},  // 92 (второй зубец пик)
+      {x: 335, y: 125}, // 93 (впадина 2)
+      {x: 270, y: 35},  // 94 (главный королевский зубец)
+      {x: 205, y: 125}, // 95 (впадина 3)
+      {x: 140, y: 70},  // 96 (четвертый зубец пик)
+      {x: 100, y: 145}, // 97 (впадина 4)
+      {x: 30, y: 105},  // 98 (левый зубец пик)
+      {x: 75, y: 180},  // 99 (боковина лево)
+      {x: 60, y: 210}   // 100
     ]
   }
 ];
 
 let curFigureIdx = 0;
-const BASE_NUM = 20;
-let nextExpectedDot = BASE_NUM;
+let nextExpectedDot = 20;
+let isSpeakingNumber = false;
 let dotsAutoTimer = null;
 const dotsSvg = document.getElementById('dotsSvg');
 const figureBadge = document.getElementById('figureBadge');
@@ -708,11 +788,17 @@ if (nextFigureBtn) {
 
 function renderDotsFigure() {
   if (dotsAutoTimer) clearTimeout(dotsAutoTimer);
-  nextExpectedDot = BASE_NUM;
+  if (speechSafetyTimer) clearTimeout(speechSafetyTimer);
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  isSpeakingNumber = false;
+
+  const fig = DOT_FIGURES[curFigureIdx];
+  const startNum = fig.startNum;
+  nextExpectedDot = startNum;
+
   dotsSvg.innerHTML = '';
   if (figureBadge) figureBadge.style.display = 'none';
 
-  const fig = DOT_FIGURES[curFigureIdx];
   const pts = fig.points;
 
   // Группа линий
@@ -738,28 +824,30 @@ function renderDotsFigure() {
   dotsGroup.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
   dotsSvg.appendChild(dotsGroup);
 
-  // Точки с числами от 20 до 40 (компактные кружки r=14, чистый читаемый шрифт)
+  // Точки с числами
   pts.forEach((pt, i) => {
-    const num = BASE_NUM + i;
+    const num = startNum + i;
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.id = `group-${num}`;
+    g.classList.add('dot-group');
     g.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
-    g.style.cursor = 'pointer';
 
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('r', '14');
-    circle.setAttribute('fill', num === BASE_NUM ? '#FFD23F' : '#FFFFFF');
+    circle.setAttribute('fill', num === startNum ? '#FFD23F' : '#FFFFFF');
     circle.setAttribute('stroke', '#2B2140');
     circle.setAttribute('stroke-width', '2.8');
     circle.classList.add('dot-circle');
-    if (num === BASE_NUM) circle.classList.add('target');
+    if (num === startNum) circle.classList.add('target');
     circle.id = `dot-${num}`;
 
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.classList.add('dot-text');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('dominant-baseline', 'central');
     text.setAttribute('font-family', 'Comfortaa, sans-serif');
     text.setAttribute('font-weight', '900');
-    text.setAttribute('font-size', '12');
+    text.setAttribute('font-size', num >= 100 ? '10.5' : '12');
     text.setAttribute('fill', '#2B2140');
     text.textContent = num;
 
@@ -768,29 +856,44 @@ function renderDotsFigure() {
 
     g.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      handleDotClick(num, pt);
+      handleDotClick(num, pt, g);
     });
 
     dotsGroup.appendChild(g);
   });
 }
 
-function handleDotClick(num, pt) {
-  if (num === nextExpectedDot) {
-    sfx.note(num - BASE_NUM + 1);
-    // Небольшая задержка чтобы Speech API успело разблокироваться после первого тапа
-    setTimeout(() => speakNumber(num), 80);
+function handleDotClick(num, pt, g) {
+  // Пока озвучивается цифра — нельзя нажимать следующую!
+  if (isSpeakingNumber) return;
 
-    const prevDot = document.getElementById(`dot-${num}`);
-    if (prevDot) {
-      prevDot.setAttribute('fill', '#2ED573');
-      prevDot.classList.remove('target');
+  const fig = DOT_FIGURES[curFigureIdx];
+  const startNum = fig.startNum;
+  const endNum = fig.endNum;
+
+  if (num === nextExpectedDot) {
+    // Блокируем новые нажатия на время говорения
+    isSpeakingNumber = true;
+
+    // Звук ноты
+    sfx.note(num - startNum + 1);
+
+    // Поднимаем группу этой точки на передний план в SVG
+    const dotsGroup = document.getElementById('dotsGroup');
+    if (dotsGroup) {
+      dotsGroup.appendChild(g);
+    }
+
+    // Выделяем и увеличиваем текущий кружок с цифрой
+    g.classList.add('speaking');
+    const circle = document.getElementById(`dot-${num}`);
+    if (circle) {
+      circle.classList.remove('target');
     }
 
     // Соединяем линией с предыдущей точкой
-    if (num > BASE_NUM) {
-      const fig = DOT_FIGURES[curFigureIdx];
-      const prevPt = fig.points[num - BASE_NUM - 1];
+    if (num > startNum) {
+      const prevPt = fig.points[num - startNum - 1];
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', prevPt.x);
       line.setAttribute('y1', prevPt.y);
@@ -799,62 +902,75 @@ function handleDotClick(num, pt) {
       line.setAttribute('stroke', '#2B2140');
       line.setAttribute('stroke-width', '4.5');
       line.setAttribute('stroke-linecap', 'round');
-      document.getElementById('drawnLines').appendChild(line);
+      const linesGroup = document.getElementById('drawnLines');
+      if (linesGroup) linesGroup.appendChild(line);
     }
 
-    nextExpectedDot++;
-    const fig = DOT_FIGURES[curFigureIdx];
-    const maxDot = BASE_NUM + fig.points.length - 1;
-
-    if (nextExpectedDot <= maxDot) {
-      const nextCircle = document.getElementById(`dot-${nextExpectedDot}`);
-      if (nextCircle) {
-        nextCircle.setAttribute('fill', '#FFD23F');
-        nextCircle.classList.add('target');
-      }
-    } else {
-      // Замкнуть контур и успешная сборка!
-      const firstPt = fig.points[0];
-      const lastPt = pt;
-      const closingLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      closingLine.setAttribute('x1', lastPt.x);
-      closingLine.setAttribute('y1', lastPt.y);
-      closingLine.setAttribute('x2', firstPt.x);
-      closingLine.setAttribute('y2', firstPt.y);
-      closingLine.setAttribute('stroke', '#2B2140');
-      closingLine.setAttribute('stroke-width', '4.5');
-      closingLine.setAttribute('stroke-linecap', 'round');
-      document.getElementById('drawnLines').appendChild(closingLine);
-
-      // Полностью убираем кружочки с цифрами, чтобы остался чистый красивый рисунок!
-      const dg = document.getElementById('dotsGroup');
-      if (dg) {
-        dg.style.opacity = '0';
-        dg.style.transform = 'scale(0.96)';
-        dg.style.pointerEvents = 'none';
+    // Озвучиваем число, блокировка снимется только после завершения речи
+    speakNumber(num, () => {
+      // Когда цифра полностью проговорена:
+      g.classList.remove('speaking');
+      if (circle) {
+        circle.setAttribute('fill', '#2ED573');
       }
 
-      // Проявляем готовую раскрашенную фигуру
-      const finalShape = document.getElementById('finalShape');
-      if (finalShape) {
-        finalShape.style.opacity = '1';
+      if (num < endNum) {
+        // Подсвечиваем следующую целевую точку
+        nextExpectedDot = num + 1;
+        const nextCircle = document.getElementById(`dot-${nextExpectedDot}`);
+        if (nextCircle) {
+          nextCircle.setAttribute('fill', '#FFD23F');
+          nextCircle.classList.add('target');
+        }
+        // Разблокируем возможность нажать следующую
+        isSpeakingNumber = false;
+      } else {
+        // Замыкаем контур и празднуем победу!
+        const firstPt = fig.points[0];
+        const lastPt = pt;
+        const closingLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        closingLine.setAttribute('x1', lastPt.x);
+        closingLine.setAttribute('y1', lastPt.y);
+        closingLine.setAttribute('x2', firstPt.x);
+        closingLine.setAttribute('y2', firstPt.y);
+        closingLine.setAttribute('stroke', '#2B2140');
+        closingLine.setAttribute('stroke-width', '4.5');
+        closingLine.setAttribute('stroke-linecap', 'round');
+        const linesGroup = document.getElementById('drawnLines');
+        if (linesGroup) linesGroup.appendChild(closingLine);
+
+        // Убираем точки, проявляем раскрашенную фигуру
+        const dg = document.getElementById('dotsGroup');
+        if (dg) {
+          dg.style.opacity = '0';
+          dg.style.transform = 'scale(0.96)';
+          dg.style.pointerEvents = 'none';
+        }
+
+        const finalShape = document.getElementById('finalShape');
+        if (finalShape) {
+          finalShape.style.opacity = '1';
+        }
+
+        // Показываем бейдж с названием фигуры и диапазоном
+        if (figureBadge && figureName) {
+          figureName.textContent = `${fig.icon} ${fig.name} (${fig.startNum}–${fig.endNum})!`;
+          figureBadge.style.display = 'flex';
+        }
+
+        fireConfetti();
+        isSpeakingNumber = false;
+
+        // Автопереход к следующей фигуре через 4 секунды
+        dotsAutoTimer = setTimeout(() => {
+          curFigureIdx = (curFigureIdx + 1) % DOT_FIGURES.length;
+          renderDotsFigure();
+        }, 4000);
       }
+    });
 
-      // Показываем бейдж с названием фигуры
-      if (figureBadge && figureName) {
-        figureName.textContent = `${fig.icon} ${fig.name}!`;
-        figureBadge.style.display = 'flex';
-      }
-
-      fireConfetti();
-
-      // Автопереход к следующей фигуре через 3.5 секунды
-      dotsAutoTimer = setTimeout(() => {
-        curFigureIdx = (curFigureIdx + 1) % DOT_FIGURES.length;
-        renderDotsFigure();
-      }, 3500);
-    }
   } else {
+    // Нажатие не на ту точку
     sfx.wrong();
   }
 }
