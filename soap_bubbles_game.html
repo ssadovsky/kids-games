@@ -315,7 +315,7 @@
   }
 
   Bubble.prototype.pop = function(){
-    if(this.popped) return;
+    if(this.popped || !playing) return;
     this.popped = true;
     counts.popped++;
     updateStats();
@@ -363,6 +363,7 @@
   function onBubbleClick(bubble){
     return function(ev){
       ev.preventDefault();
+      if(!playing) return;
       bubble.pop();
     };
   }
