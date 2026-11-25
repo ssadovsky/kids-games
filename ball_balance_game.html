@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Кати Шар 3D — Баланс над водой</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #2B2140;
+    --sky-1: #38BDF8;
+    --sky-2: #7DD3FC;
+    --card-bg: #FFFFFF;
+    --sun: #FFD23F;
+    --gold: #F59E0B;
+    --green: #10B981;
+    --blue: #0284C7;
+    --red: #EF4444;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    font-family: 'Nunito', sans-serif;
+    color: var(--ink);
+    background: #0284C7;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  #webgl-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+    cursor: grab;
+  }
+
+  #webgl-canvas:active {
+    cursor: grabbing;
+  }
+
+  #app {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding-top: max(env(safe-area-inset-top, 0px), 8px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+    padding-left: max(env(safe-area-inset-left, 0px), 12px);
+    padding-right: max(env(safe-area-inset-right, 0px), 12px);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .top-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .top-left, .top-center, .top-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFFEE;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    color: var(--ink);
+    box-shadow: 0 4px 0 var(--ink);
+    cursor: pointer;
+    font-family: 'Comfortaa', cursive;
+    font-weight: 700;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    text-decoration: none;
+  }
+
+  .btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--ink);
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    border-radius: 50%;
+  }
+
+  .level-badge {
+    background: #FFFFFFEE;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    padding: 6px 16px;
+    box-shadow: 0 4px 0 var(--ink);
+    font-family: 'Comfortaa', cursive;
+    font-weight: 900;
+    font-size: clamp(13px, 2.2vmin, 16px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .stars-badge {
+    background: #FFFFFFEE;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    padding: 6px 14px;
+    box-shadow: 0 4px 0 var(--ink);
+    font-family: 'Comfortaa', cursive;
+    font-weight: 900;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #D97706;
+  }
+
+  /* Прогресс-бар длины трассы */
+  .progress-container {
+    background: #FFFFFFEE;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    padding: 4px 12px;
+    box-shadow: 0 4px 0 var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .progress-track {
+    width: clamp(80px, 14vmin, 140px);
+    height: 10px;
+    background: #E2E8F0;
+    border-radius: 99px;
+    border: 2px solid var(--ink);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #F59E0B, #10B981);
+    border-radius: 99px;
+    transition: width 0.15s ease;
+  }
+
+  /* Всплывающее уведомление */
+  .toast-banner {
+    position: fixed;
+    top: max(env(safe-area-inset-top, 0px), 64px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: #FFFFFFFA;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    padding: 8px 24px;
+    box-shadow: 0 6px 0 var(--ink);
+    font-family: 'Comfortaa', cursive;
+    font-weight: 900;
+    font-size: 16px;
+    color: var(--ink);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  }
+
+  .toast-banner.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Визуальный маркер тяги мыши */
+  .mouse-drag-marker {
+    position: fixed;
+    width: 76px;
+    height: 76px;
+    margin-left: -38px;
+    margin-top: -38px;
+    border-radius: 50%;
+    border: 3px dashed rgba(255, 255, 255, 0.85);
+    background: rgba(255, 210, 63, 0.22);
+    box-shadow: 0 0 16px rgba(255, 210, 63, 0.4);
+    pointer-events: none;
+    display: none;
+    z-index: 15;
+  }
+
+  .mouse-drag-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    margin-top: -16px;
+    margin-left: -16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #FFF3C2, #FFD23F);
+    border: 3px solid var(--ink);
+    box-shadow: 0 3px 0 var(--ink);
+    transform: translate(0px, 0px);
+  }
+
+  /* Подсказка управления внизу */
+  .hint-bar {
+    position: fixed;
+    bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.94);
+    border: 2.5px solid var(--ink);
+    border-radius: 99px;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+    pointer-events: none;
+    z-index: 12;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Модальные окна */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(43, 33, 64, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-box {
+    background: #FFFFFF;
+    border: 4px solid var(--ink);
+    border-radius: 28px;
+    padding: clamp(16px, 3.5vmin, 26px);
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 0 var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transform: scale(0.92);
+    transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  }
+
+  .modal-overlay.active .modal-box {
+    transform: scale(1);
+  }
+
+  .modal-title {
+    font-family: 'Comfortaa', cursive;
+    font-weight: 900;
+    font-size: clamp(20px, 3.8vmin, 26px);
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+
+  .modal-sub {
+    font-size: clamp(13px, 2vmin, 15px);
+    font-weight: 700;
+    color: #64748B;
+    margin-bottom: 16px;
+  }
+
+  .levels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .level-card {
+    background: #F8FAFC;
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    padding: 12px 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--ink);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .level-card:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--ink);
+  }
+
+  .level-card.active-current {
+    background: #FEF3C7;
+    border-color: #D97706;
+  }
+
+  .level-card .lvl-num {
+    font-family: 'Comfortaa', cursive;
+    font-weight: 900;
+    font-size: 22px;
+  }
+
+  .level-card .lvl-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  .btn-primary {
+    background: radial-gradient(circle at 35% 35%, #FFE066, #FFD23F);
+  }
+
+  .btn-secondary {
+    background: #F1F5F9;
+  }
+
+  .skins-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .skin-card {
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    padding: 8px 4px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--ink);
+    background: #F8FAFC;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: transform 0.1s ease;
+    position: relative;
+  }
+
+  .skin-card.active {
+    background: #FEF3C7;
+    border-color: #D97706;
+  }
+
+  .skin-card.locked {
+    opacity: 0.65;
+    background: #F1F5F9;
+  }
+
+  .skin-preview {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    box-shadow: inset -4px -4px 6px rgba(0,0,0,0.25), inset 4px 4px 6px rgba(255,255,255,0.4);
+  }
+
+  .skin-name {
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .skin-price {
+    font-size: 10px;
+    font-weight: 900;
+    color: #D97706;
+    background: #FFFBEB;
+    border: 1.5px solid #D97706;
+    border-radius: 99px;
+    padding: 1px 6px;
+  }
+
+  .win-stars {
+    font-size: 44px;
+    margin: 8px 0 16px;
+    letter-spacing: 6px;
+    animation: bounce 0.6s ease infinite alternate;
+  }
+
+  @keyframes bounce {
+    from { transform: scale(0.95); }
+    to { transform: scale(1.08); }
+  }
+
+  .rotate-prompt {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(43, 33, 64, 0.94);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #FFFFFF;
+    text-align: center;
+  }
+
+  @media screen and (orientation: portrait) {
+    .rotate-prompt { display: flex; }
+  }
+
+  .rotate-card {
+    background: #FFFFFF;
+    color: var(--ink);
+    border: 4px solid var(--ink);
+    border-radius: 22px;
+    padding: 20px 24px;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .rotate-icon {
+    width: 56px;
+    height: 56px;
+    color: #FFD23F;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="rotate-prompt">
+    <div class="rotate-card">
+      <div class="rotate-icon">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="18" y="10" width="28" height="44" rx="4"/>
+          <line x1="28" y1="46" x2="36" y2="46"/>
+          <path d="M48 20 A 24 24 0 0 1 48 44" stroke-dasharray="4 4" stroke-width="2.5"/>
+          <polyline points="48 48 48 42 42 45"/>
+        </svg>
+      </div>
+      <div style="font-family:'Comfortaa', cursive; font-weight:700; font-size:1.2rem; margin-bottom:6px;">Поверни экран 🔄</div>
+      <div style="font-size:0.88rem; opacity:0.85;">Игра создана для горизонтального режима</div>
+    </div>
+  </div>
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <div class="mouse-drag-marker" id="drag-marker">
+    <div class="mouse-drag-knob" id="drag-knob"></div>
+  </div>
+
+  <div id="app">
+    <div class="top-bar">
+      <div class="top-left">
+        <a href="index.html" class="btn btn-icon" title="К другим играм">⬅️</a>
+        <button class="btn btn-icon" id="btn-restart" title="Начать заново">🔄</button>
+        <button class="btn btn-icon" id="btn-levels-menu" title="Выбор уровня">🗺️</button>
+      </div>
+
+      <div class="top-center">
+        <div class="level-badge" id="ui-level-name">🌴 Уровень 1</div>
+        <div class="progress-container">
+          <span style="font-size: 13px;">🚩</span>
+          <div class="progress-track">
+            <div class="progress-fill" id="ui-progress-fill"></div>
+          </div>
+          <span style="font-size: 13px;">🏁</span>
+        </div>
+      </div>
+
+      <div class="top-right">
+        <div class="stars-badge" id="ui-stars-bank-badge" style="color: #D97706; background: #FEF3C7;" title="Всего звёзд в копилке">🪙 <span id="ui-stars-bank">0</span></div>
+        <div class="stars-badge" id="ui-stars-badge">⭐ <span id="ui-stars-count">0/8</span></div>
+        <button class="btn btn-icon" id="btn-cam-view" title="Переключить камеру">🎥</button>
+        <button class="btn btn-icon" id="btn-skins" title="Скин шарика">🎨</button>
+        <button class="btn btn-icon" id="btn-sound" title="Вкл/Выкл звук">🔊</button>
+      </div>
+    </div>
+
+    <div class="toast-banner" id="toast-banner">⛳ Чекпоинт сохранён!</div>
+
+    <div class="hint-bar" id="hint-bar">
+      ✨ <b>Тяни мышкой или пальцем</b> — кати шарик вперёд! Камера поворачивается сама 🎥 | <b>WASD</b>
+    </div>
+  </div>
+
+  <!-- Модальное окно победы на уровне -->
+  <div class="modal-overlay" id="modal-win">
+    <div class="modal-box">
+      <div class="modal-title">🎉 ОСТРОВ ПРОЙДЕН!</div>
+      <div class="modal-sub" id="win-subtitle">Ты отлично докатил шарик до следующего острова!</div>
+      <div class="win-stars" id="win-stars-display">⭐⭐⭐</div>
+      <div class="modal-actions">
+        <button class="btn action-btn btn-secondary" id="btn-win-replay">🔄 Снова</button>
+        <button class="btn action-btn btn-primary" id="btn-win-next">Следующий остров ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно выбора уровня -->
+  <div class="modal-overlay" id="modal-levels">
+    <div class="modal-box">
+      <div class="modal-title">🗺️ КАРТА АРХИПЕЛАГА</div>
+      <div class="modal-sub">Путешествуй по цепочке островов от Солнечной лагуны до Великого Маяка!</div>
+      <div class="levels-grid" id="levels-grid"></div>
+      <div class="modal-actions">
+        <button class="btn action-btn btn-secondary" id="btn-close-levels">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно выбора скина шарика -->
+  <div class="modal-overlay" id="modal-skins">
+    <div class="modal-box">
+      <div class="modal-title">🎨 ВЫБЕРИ СКИН ШАРИКА</div>
+      <div class="modal-sub">Выбери любимый цвет и узор для шарика!</div>
+      <div class="skins-grid" id="skins-grid"></div>
+      <div class="modal-actions">
+        <button class="btn action-btn btn-primary" id="btn-close-skins">Готово</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib/three.min.js"></script>
+  <script src="lib/GLTFLoader.js"></script>
+  <script src="models/models_data.js"></script>
+
+  <script>
+  /**
+   * КАТИ ШАР 3D — Жанр Ballance / Super Monkey Ball
+   * Открытые узкие мостики, рельефные горки, уклоны, инерция и ноль перил!
+   */
+  (function () {
+    'use strict';
+
+    // --- ЗВУКОВОЙ ДВИЖОК (WEB AUDIO API) ---
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.rollGain = null;
+        this.rollOsc = null;
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(75, this.ctx.currentTime);
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(160, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(0, this.ctx.currentTime);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+
+          this.rollOsc = osc;
+          this.rollGain = gain;
+        } catch (e) {}
+      }
+
+      resume() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      setRollingSpeed(speed, onGround) {
+        if (!this.ctx || !this.enabled || !this.rollGain) return;
+        if (!onGround || speed < 0.2) {
+          this.rollGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+          return;
+        }
+        const vol = Math.min(0.24, (speed / 18) * 0.24);
+        const pitch = 65 + Math.min(80, speed * 4);
+        this.rollGain.gain.setTargetAtTime(vol, this.ctx.currentTime, 0.05);
+        this.rollOsc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.05);
+      }
+
+      playStar() {
+        if (!this.enabled || !this.ctx) return;
+        this.resume();
+        const notes = [659.25, 830.61, 1046.5];
+        notes.forEach((freq, idx) => {
+          const t = this.ctx.currentTime + idx * 0.06;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.22, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.26);
+        });
+      }
+
+      playSplash() {
+        if (!this.enabled || !this.ctx) return;
+        this.resume();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(340, t);
+        osc.frequency.exponentialRampToValueAtTime(90, t + 0.4);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.46);
+      }
+
+      playCheckpoint() {
+        if (!this.enabled || !this.ctx) return;
+        this.resume();
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((freq, idx) => {
+          const t = this.ctx.currentTime + idx * 0.05;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.36);
+        });
+      }
+
+      playTurbo() {
+        if (!this.enabled || !this.ctx) return;
+        this.resume();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.exponentialRampToValueAtTime(880, t + 0.28);
+        gain.gain.setValueAtTime(0.28, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.36);
+      }
+
+      playHole() {
+        if (!this.enabled || !this.ctx) return;
+        this.resume();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, t);
+        osc.frequency.exponentialRampToValueAtTime(70, t + 0.22);
+        gain.gain.setValueAtTime(0.4, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.26);
+      }
+
+      playWin() {
+        if (!this.enabled || !this.ctx) return;
+        this.resume();
+        const melody = [
+          { f: 523.25, d: 0.12 },
+          { f: 659.25, d: 0.12 },
+          { f: 783.99, d: 0.14 },
+          { f: 1046.5, d: 0.45 }
+        ];
+        let accTime = this.ctx.currentTime;
+        melody.forEach(item => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(item.f, accTime);
+          gain.gain.setValueAtTime(0.3, accTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, accTime + item.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(accTime);
+          osc.stop(accTime + item.d + 0.02);
+          accTime += item.d;
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // --- ПРОЦЕДУРНЫЕ ГЕНЕРАТОРЫ ТЕКСТУР (ДЕРЕВО, КАНАТЫ, ТРАВА, ПЕСОК) ---
+    function makeWoodTexture(bgHex, lineHex) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 512; cvs.height = 256;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = bgHex;
+      ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+      // Продольные волокна древесины
+      for (let i = 0; i < 45; i++) {
+        const y = Math.random() * cvs.height;
+        const h = 2 + Math.random() * 6;
+        ctx.fillStyle = (i % 2 === 0) ? lineHex : 'rgba(0,0,0,0.12)';
+        ctx.fillRect(0, y, cvs.width, h);
+      }
+
+      // Тёмная аккуратная фаска по периметру
+      ctx.strokeStyle = 'rgba(40, 20, 5, 0.42)';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(0, 0, cvs.width, cvs.height);
+
+      // Золотисто-медные шляпки гвоздей по углам
+      const nail = (x, y) => {
+        ctx.fillStyle = '#451A03';
+        ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#F59E0B';
+        ctx.beginPath(); ctx.arc(x - 2, y - 2, 6, 0, Math.PI * 2); ctx.fill();
+      };
+      nail(28, 28);
+      nail(28, cvs.height - 28);
+      nail(cvs.width - 28, 28);
+      nail(cvs.width - 28, cvs.height - 28);
+
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function makeRopeTexture() {
+      const cvs = document.createElement('canvas');
+      cvs.width = 128; cvs.height = 128;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = '#92400E';
+      ctx.fillRect(0, 0, cvs.width, cvs.height);
+      ctx.fillStyle = '#78350F';
+      for (let x = -128; x < 256; x += 22) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0); ctx.lineTo(x + 128, 128); ctx.lineTo(x + 138, 128); ctx.lineTo(x + 10, 0);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#FDE68A';
+      for (let x = -128; x < 256; x += 22) {
+        ctx.beginPath();
+        ctx.moveTo(x + 4, 0); ctx.lineTo(x + 132, 128); ctx.lineTo(x + 135, 128); ctx.lineTo(x + 7, 0);
+        ctx.fill();
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(16, 1);
+      return tex;
+    }
+
+    function makeGrassTexture(hasFlowers) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 512; cvs.height = 512;
+      const ctx = cvs.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 512, 512);
+      grad.addColorStop(0, '#22C55E');
+      grad.addColorStop(0.5, '#16A34A');
+      grad.addColorStop(1, '#15803D');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Пятнышки сочной зелени
+      for (let i = 0; i < 180; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#4ADE80' : '#14532D';
+        ctx.beginPath();
+        ctx.arc(Math.random() * 512, Math.random() * 512, 3 + Math.random() * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Цветы на лужайке
+      if (hasFlowers) {
+        const colors = ['#FFFFFF', '#FDE047', '#F43F5E', '#C084FC'];
+        for (let i = 0; i < 50; i++) {
+          const fx = Math.random() * 512;
+          const fy = Math.random() * 512;
+          ctx.fillStyle = colors[i % colors.length];
+          for (let p = 0; p < 5; p++) {
+            const ang = (p / 5) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.arc(fx + Math.cos(ang) * 5, fy + Math.sin(ang) * 5, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.fillStyle = '#F59E0B';
+          ctx.beginPath(); ctx.arc(fx, fy, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 4);
+      return tex;
+    }
+
+    function makeSandTexture() {
+      const cvs = document.createElement('canvas');
+      cvs.width = 256; cvs.height = 256;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = '#FDE047';
+      ctx.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 300; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#F59E0B' : '#FEF08A';
+        ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(5, 5);
+      return tex;
+    }
+
+    // --- 6 КРУТЫХ СКИНОВ ШАРИКА (ОТКРЫВАЮТСЯ ЗА СОБРАННЫЕ ЗВЁЗДЫ) ---
+    const SKINS = [
+      {
+        id: 'beach',
+        name: 'Пляжный',
+        price: 0,
+        color: '#FF4757',
+        generator: () => {
+          const cvs = document.createElement('canvas');
+          cvs.width = 1024; cvs.height = 512;
+          const ctx = cvs.getContext('2d');
+          const cols = ['#FF3B30', '#FFFFFF', '#FF9500', '#FFFFFF', '#007AFF', '#FFFFFF', '#34C759', '#FFFFFF'];
+          const w = cvs.width / cols.length;
+          cols.forEach((col, i) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(i * w, 0, w, cvs.height);
+          });
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, cvs.width, 36);
+          ctx.fillRect(0, cvs.height - 36, cvs.width, 36);
+          ctx.fillStyle = '#FFD23F';
+          ctx.fillRect(0, cvs.height / 2 - 16, cvs.width, 32);
+          return new THREE.CanvasTexture(cvs);
+        }
+      },
+      {
+        id: 'cat',
+        name: 'Котик 🐱',
+        price: 5,
+        color: '#F97316',
+        generator: () => {
+          const cvs = document.createElement('canvas');
+          cvs.width = 1024; cvs.height = 512;
+          const ctx = cvs.getContext('2d');
+          ctx.fillStyle = '#FDBA74';
+          ctx.fillRect(0, 0, cvs.width, cvs.height);
+          // Белая грудка
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath(); ctx.ellipse(cvs.width * 0.5, 340, 160, 140, 0, 0, Math.PI * 2); ctx.fill();
+          // Глаза котика
+          ctx.fillStyle = '#15803D';
+          ctx.beginPath(); ctx.ellipse(cvs.width * 0.42, 200, 24, 34, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(cvs.width * 0.58, 200, 24, 34, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#1E293B';
+          ctx.beginPath(); ctx.ellipse(cvs.width * 0.42, 200, 10, 30, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(cvs.width * 0.58, 200, 10, 30, 0, 0, Math.PI * 2); ctx.fill();
+          // Блики
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath(); ctx.arc(cvs.width * 0.40, 185, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(cvs.width * 0.56, 185, 8, 0, Math.PI * 2); ctx.fill();
+          // Носик и усы
+          ctx.fillStyle = '#F43F5E';
+          ctx.beginPath();
+          ctx.moveTo(cvs.width * 0.5, 230);
+          ctx.lineTo(cvs.width * 0.47, 218);
+          ctx.lineTo(cvs.width * 0.53, 218);
+          ctx.closePath(); ctx.fill();
+          // Усики
+          ctx.strokeStyle = '#7C2D12'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(cvs.width * 0.38, 225); ctx.lineTo(cvs.width * 0.26, 215);
+          ctx.moveTo(cvs.width * 0.38, 235); ctx.lineTo(cvs.width * 0.25, 238);
+          ctx.moveTo(cvs.width * 0.62, 225); ctx.lineTo(cvs.width * 0.74, 215);
+          ctx.moveTo(cvs.width * 0.62, 235); ctx.lineTo(cvs.width * 0.75, 238);
+          ctx.stroke();
+          return new THREE.CanvasTexture(cvs);
+        }
+      },
+      {
+        id: 'watermelon',
+        name: 'Арбузик 🍉',
+        price: 10,
+        color: '#10B981',
+        generator: () => {
+          const cvs = document.createElement('canvas');
+          cvs.width = 1024; cvs.height = 512;
+          const ctx = cvs.getContext('2d');
+          ctx.fillStyle = '#059669';
+          ctx.fillRect(0, 0, cvs.width, cvs.height);
+          // Темно-зеленые полосы
+          ctx.fillStyle = '#064E3B';
+          for (let x = 0; x < cvs.width; x += 90) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.bezierCurveTo(x + 25, 170, x - 25, 340, x, 512);
+            ctx.lineTo(x + 36, 512);
+            ctx.bezierCurveTo(x + 11, 340, x + 61, 170, x + 36, 0);
+            ctx.closePath();
+            ctx.fill();
+          }
+          return new THREE.CanvasTexture(cvs);
+        }
+      },
+      {
+        id: 'smile',
+        name: 'Смайлик 😄',
+        price: 15,
+        color: '#FFD23F',
+        generator: () => {
+          const cvs = document.createElement('canvas');
+          cvs.width = 1024; cvs.height = 512;
+          const ctx = cvs.getContext('2d');
+          ctx.fillStyle = '#FFD23F';
+          ctx.fillRect(0, 0, cvs.width, cvs.height);
+          ctx.fillStyle = '#2B2140';
+          ctx.beginPath(); ctx.ellipse(cvs.width * 0.42, 200, 26, 38, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(cvs.width * 0.58, 200, 26, 38, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath(); ctx.arc(cvs.width * 0.44, 185, 12, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(cvs.width * 0.60, 185, 12, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#2B2140'; ctx.lineWidth = 18; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.arc(cvs.width * 0.5, 230, 72, 0.25, Math.PI - 0.25); ctx.stroke();
+          ctx.fillStyle = '#FF6B6B';
+          ctx.beginPath(); ctx.arc(cvs.width * 0.35, 250, 22, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(cvs.width * 0.65, 250, 22, 0, Math.PI * 2); ctx.fill();
+          return new THREE.CanvasTexture(cvs);
+        }
+      },
+      {
+        id: 'fire',
+        name: 'Огонь 🔥',
+        price: 25,
+        color: '#EF4444',
+        generator: () => {
+          const cvs = document.createElement('canvas');
+          cvs.width = 1024; cvs.height = 512;
+          const ctx = cvs.getContext('2d');
+          const grad = ctx.createLinearGradient(0, 0, 0, cvs.height);
+          grad.addColorStop(0, '#7F1D1D');
+          grad.addColorStop(0.5, '#DC2626');
+          grad.addColorStop(1, '#F59E0B');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, cvs.width, cvs.height);
+          // Языки пламени
+          for (let i = 0; i < cvs.width; i += 70) {
+            ctx.fillStyle = '#FEF08A';
+            ctx.beginPath();
+            ctx.moveTo(i, cvs.height);
+            ctx.quadraticCurveTo(i + 35, 120 + Math.random() * 80, i + 70, cvs.height);
+            ctx.fill();
+          }
+          return new THREE.CanvasTexture(cvs);
+        }
+      },
+      {
+        id: 'galaxy',
+        name: 'Космос 🌌',
+        price: 35,
+        color: '#8B5CF6',
+        generator: () => {
+          const cvs = document.createElement('canvas');
+          cvs.width = 1024; cvs.height = 512;
+          const ctx = cvs.getContext('2d');
+          const grad = ctx.createLinearGradient(0, 0, cvs.width, cvs.height);
+          grad.addColorStop(0, '#0F172A');
+          grad.addColorStop(0.5, '#581C87');
+          grad.addColorStop(1, '#0284C7');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, cvs.width, cvs.height);
+          ctx.fillStyle = '#FFFFFF';
+          for (let i = 0; i < 220; i++) {
+            const rx = Math.random() * cvs.width;
+            const ry = Math.random() * cvs.height;
+            const r = Math.random() * 3 + 1;
+            ctx.beginPath(); ctx.arc(rx, ry, r, 0, Math.PI * 2); ctx.fill();
+          }
+          return new THREE.CanvasTexture(cvs);
+        }
+      }
+    ];
+
+    let currentSkinIndex = 0;
+    let totalStarsBank = parseInt(localStorage.getItem('ball_balance_stars_bank') || '0', 10);
+
+    // --- МАТЕРИАЛЫ СЦЕНЫ С ТЕКСТУРАМИ (MEADOW GRASS & AERIAL BEACH SAND ИЗ POLY HAVEN) ---
+    function createTextureFromBase64(dataUri, repeatX = 4, repeatY = 4) {
+      if (!dataUri) return null;
+      const img = new Image();
+      const tex = new THREE.Texture(img);
+      img.onload = () => {
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(repeatX, repeatY);
+        tex.encoding = THREE.sRGBEncoding;
+        tex.needsUpdate = true;
+      };
+      img.src = dataUri;
+      return tex;
+    }
+
+    const woodTex1 = makeWoodTexture('#D97706', '#B45309');
+    const woodTex2 = makeWoodTexture('#B45309', '#92400E');
+    const ropeTex = makeRopeTexture();
+
+    // Высококачественные фотореалистичные текстуры из Poly Haven / Avelora (без CORS на file:///)
+    const grassTex = (window.TEXTURES_BASE64 && window.TEXTURES_BASE64.grass)
+      ? createTextureFromBase64(window.TEXTURES_BASE64.grass, 5, 5)
+      : makeGrassTexture(true);
+
+    const sandTex = (window.TEXTURES_BASE64 && window.TEXTURES_BASE64.sand)
+      ? createTextureFromBase64(window.TEXTURES_BASE64.sand, 5, 5)
+      : makeSandTexture();
+
+    const pebblesTex = (window.TEXTURES_BASE64 && window.TEXTURES_BASE64.pebbles)
+      ? createTextureFromBase64(window.TEXTURES_BASE64.pebbles, 6, 6)
+      : null;
+
+    const MATS = {
+      woodPlank1: new THREE.MeshStandardMaterial({ map: woodTex1, roughness: 0.65 }),
+      woodPlank2: new THREE.MeshStandardMaterial({ map: woodTex2, roughness: 0.65 }),
+      woodBeam: new THREE.MeshStandardMaterial({ color: 0x78350F, roughness: 0.8 }),
+      rope: new THREE.MeshStandardMaterial({ map: ropeTex, roughness: 0.85 }),
+      stonePath: new THREE.MeshStandardMaterial({
+        map: pebblesTex,
+        color: pebblesTex ? 0xFFFFFF : 0x94A3B8,
+        roughness: 0.75
+      }),
+      islandSand: new THREE.MeshStandardMaterial({
+        map: sandTex,
+        roughness: 0.85
+      }),
+      islandGrass: new THREE.MeshStandardMaterial({
+        map: grassTex,
+        roughness: 0.65,
+        metalness: 0.05
+      }),
+      palmBark: new THREE.MeshStandardMaterial({ color: 0x92400E, roughness: 0.85 }),
+      palmLeaf: new THREE.MeshStandardMaterial({ color: 0x10B981, roughness: 0.4, side: THREE.DoubleSide }),
+      goldStar: new THREE.MeshStandardMaterial({ color: 0xFBBF24, roughness: 0.15, metalness: 0.7, emissive: 0xD97706, emissiveIntensity: 0.4 }),
+      turboGate: new THREE.MeshStandardMaterial({ color: 0xF59E0B, roughness: 0.3, emissive: 0xD97706, emissiveIntensity: 0.5 }),
+      checkpointArch: new THREE.MeshStandardMaterial({ color: 0x3B82F6, roughness: 0.4 }),
+      checkpointGemBlue: new THREE.MeshStandardMaterial({ color: 0x38BDF8, roughness: 0.1, metalness: 0.5, emissive: 0x0284C7, emissiveIntensity: 0.6 }),
+      checkpointGemGreen: new THREE.MeshStandardMaterial({ color: 0x34D399, roughness: 0.1, metalness: 0.5, emissive: 0x10B981, emissiveIntensity: 0.8 })
+    };
+
+    // --- 5 ГРАНДИОЗНЫХ ТРАСС-ПРОДОЛЖЕНИЙ (МАСШТАБ 250-330 МЕТРОВ КАЖДАЯ!) ---
+    const LEVELS_CONFIG = [
+      {
+        id: 0,
+        name: 'Лагуна Ракушек',
+        icon: '🌴',
+        desc: 'Начало кругосветного плавания! Подвесной мост через тропические атоллы и бирюзовые отмели.',
+        starsTotal: 10,
+        spawn: { x: 0, y: 3.8, z: 0 },
+        theme: { name: 'tropical', seed: 1.2, palmCount: 3, hasLighthouse: false },
+        pathPoints: [
+          [0, 3.2, 0, 3.0],
+          [0, 3.2, 16, 2.8],
+          [4, 4.0, 32, 2.6],
+          [14, 5.2, 48, 2.5],
+          [28, 6.0, 60, 2.5],     // Вершина видового холма над лагуной
+          [44, 5.0, 68, 2.5],
+          [62, 3.8, 68, 2.6],     // Спуск к воде
+          [78, 3.4, 60, 2.6],
+          [90, 4.2, 46, 2.5],
+          [96, 5.5, 28, 2.5],     // Дуга вокруг кораллового рифа
+          [92, 6.2, 10, 2.4],
+          [82, 5.0, -8, 2.5],
+          [74, 3.8, -24, 2.6],
+          [70, 3.4, -40, 2.6],
+          [72, 4.4, -56, 2.5],
+          [68, 5.2, -70, 2.6],
+          [65, 4.0, -85, 3.2]     // Финишный Остров 1 («Изумрудные Пики»)
+        ],
+        turboGates: [0.28, 0.65],
+        checkpoints: [0.45]
+      },
+      {
+        id: 1,
+        name: 'Изумрудные Пики',
+        icon: '⛰️',
+        desc: 'Продолжение пути со второго острова! Высокие мосты над морским каньоном и древними скалами.',
+        starsTotal: 12,
+        spawn: { x: 65, y: 4.5, z: -85 },
+        theme: { name: 'emerald', seed: 2.7, palmCount: 2, hasLighthouse: false },
+        pathPoints: [
+          [65, 4.0, -85, 3.2],    // Старт прямо с Острова 1!
+          [68, 4.0, -100, 2.8],
+          [76, 5.2, -114, 2.6],
+          [90, 6.8, -124, 2.5],
+          [108, 8.2, -126, 2.4],  // Панорамный мост на высоте 8 метров!
+          [126, 7.4, -118, 2.4],
+          [140, 5.5, -104, 2.5],  // Скоростной спуск
+          [148, 4.0, -86, 2.6],
+          [152, 4.5, -66, 2.5],
+          [154, 5.8, -46, 2.4],
+          [150, 6.8, -24, 2.4],
+          [142, 5.8, -4, 2.5],
+          [136, 4.2, 14, 2.6],
+          [136, 3.8, 30, 2.8],
+          [140, 4.0, 46, 3.2]     // Финишный Остров 2 («Ветреный Риф»)
+        ],
+        turboGates: [0.32, 0.72],
+        checkpoints: [0.50]
+      },
+      {
+        id: 2,
+        name: 'Ветреный Риф',
+        icon: '🌀',
+        desc: 'Путь с третьего острова! Винтовая спираль и захватывающие виражи над волнами.',
+        starsTotal: 12,
+        spawn: { x: 140, y: 4.5, z: 46 },
+        theme: { name: 'windy', seed: 4.1, palmCount: 3, hasLighthouse: false },
+        pathPoints: [
+          [140, 4.0, 46, 3.2],    // Старт прямо с Острова 2!
+          [134, 4.0, 62, 2.8],
+          [120, 4.8, 76, 2.6],
+          [102, 6.0, 86, 2.5],
+          [82, 7.2, 90, 2.4],
+          [62, 8.0, 86, 2.4],     // Вершина горного хребта
+          [44, 7.2, 76, 2.4],
+          [28, 5.8, 64, 2.5],
+          [16, 4.4, 54, 2.6],
+          [2, 3.8, 46, 2.6],
+          [-14, 4.5, 42, 2.5],
+          [-28, 5.8, 44, 2.4],
+          [-40, 6.5, 52, 2.4],
+          [-48, 5.0, 64, 2.6],
+          [-52, 4.0, 78, 3.2]     // Финишный Остров 3 («Пиратская Бухта»)
+        ],
+        turboGates: [0.30, 0.75],
+        checkpoints: [0.52]
+      },
+      {
+        id: 3,
+        name: 'Пиратская Бухта',
+        icon: '🏴‍☠️',
+        desc: 'Дорога с четвёртого острова! Мост сквозь скалистые гроты с сундуками золота.',
+        starsTotal: 14,
+        spawn: { x: -52, y: 4.5, z: 78 },
+        theme: { name: 'pirate', seed: 5.6, palmCount: 2, hasLighthouse: false },
+        pathPoints: [
+          [-52, 4.0, 78, 3.2],    // Старт прямо с Острова 3!
+          [-62, 4.0, 64, 2.8],
+          [-76, 5.0, 48, 2.6],
+          [-90, 6.2, 30, 2.5],
+          [-104, 7.4, 12, 2.4],
+          [-116, 8.2, -8, 2.4],   // Арочный каменный акведук над гротом
+          [-122, 7.0, -28, 2.4],
+          [-124, 5.2, -48, 2.5],
+          [-120, 3.8, -66, 2.6],
+          [-110, 4.4, -82, 2.5],
+          [-96, 5.6, -94, 2.4],
+          [-80, 6.4, -100, 2.4],
+          [-64, 5.2, -98, 2.5],
+          [-52, 4.0, -90, 2.8],
+          [-45, 4.0, -80, 3.2]    // Финишный Остров 4 («Преддверие Маяка»)
+        ],
+        turboGates: [0.28, 0.70],
+        checkpoints: [0.48]
+      },
+      {
+        id: 4,
+        name: 'Великий Золотой Остров',
+        icon: '⭐',
+        desc: 'Кульминация приключения! Грандиозный панорамный мост к Золотой Лунке Чемпионов!',
+        starsTotal: 16,
+        spawn: { x: -45, y: 4.5, z: -80 },
+        theme: { name: 'grand', seed: 7.9, palmCount: 4 },
+        pathPoints: [
+          [-45, 4.0, -80, 3.2],   // Старт прямо с Острова 4!
+          [-38, 4.2, -64, 2.8],
+          [-28, 5.5, -48, 2.6],
+          [-16, 7.0, -34, 2.5],
+          [-2, 8.5, -24, 2.4],    // Взлёт на вершину золотого моста над облаками!
+          [12, 9.2, -18, 2.4],
+          [28, 8.5, -16, 2.4],
+          [40, 7.0, -22, 2.5],
+          [48, 5.5, -34, 2.5],
+          [50, 4.2, -48, 2.6],
+          [44, 3.8, -62, 2.6],
+          [32, 4.6, -74, 2.5],
+          [16, 5.8, -80, 2.4],
+          [0, 6.5, -78, 2.5],
+          [-12, 5.0, -66, 2.6],
+          [-18, 4.0, -48, 2.8],
+          [-10, 3.6, -30, 3.0],
+          [0, 3.5, -10, 3.6]      // Триумфальный финиш у Золотой Лунки!
+        ],
+        turboGates: [0.25, 0.55, 0.82],
+        checkpoints: [0.40, 0.70]
+      }
+    ];
+
+    // --- ЗАГРУЗЧИК 3D МОДЕЛЕЙ (ПАЛЬМЫ, СКАЛЫ, ПРИЧАЛЫ ИЗ AVELORA) ---
+    const MODEL_CACHE = {
+      palmMajesty: null,
+      palmFan: null,
+      rockGroup: null,
+      rock: null,
+      dock: null,
+      barrel: null,
+      crate: null
+    };
+
+    function base64ToArrayBuffer(base64) {
+      const binary_string = window.atob(base64);
+      const len = binary_string.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary_string.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
+    function load3DModels(callback) {
+      if (typeof THREE.GLTFLoader === 'undefined') {
+        if (callback) callback();
+        return;
+      }
+      const loader = new THREE.GLTFLoader();
+
+      // Если модели упакованы в Base64 в models_data.js, парсим прямо из памяти (без HTTP fetch и CORS на file:///)
+      if (window.MODELS_BASE64 && Object.keys(window.MODELS_BASE64).length > 0) {
+        const keys = Object.keys(window.MODELS_BASE64);
+        let loaded = 0;
+        keys.forEach(key => {
+          try {
+            const buffer = base64ToArrayBuffer(window.MODELS_BASE64[key]);
+            loader.parse(
+              buffer,
+              '',
+              (gltf) => {
+                MODEL_CACHE[key] = gltf.scene;
+                gltf.scene.traverse((c) => {
+                  if (c.isMesh) {
+                    c.castShadow = true;
+                    c.receiveShadow = true;
+                    if (c.material) {
+                      c.material.side = THREE.DoubleSide;
+                      if (c.material.map) {
+                        c.material.map.encoding = THREE.sRGBEncoding;
+                        c.material.map.needsUpdate = true;
+                      }
+                      c.material.needsUpdate = true;
+                    }
+                  }
+                });
+                loaded++;
+                if (loaded === keys.length && callback) callback();
+              },
+              (err) => {
+                console.warn('Error parsing 3D model ' + key, err);
+                loaded++;
+                if (loaded === keys.length && callback) callback();
+              }
+            );
+          } catch (err) {
+            console.warn('Failed to parse 3D model ' + key, err);
+            loaded++;
+            if (loaded === keys.length && callback) callback();
+          }
+        });
+        return;
+      }
+
+      const list = [
+        { key: 'palmMajesty', url: 'models/palm_majesty.glb' },
+        { key: 'palmFan', url: 'models/palm_fan.glb' },
+        { key: 'rockGroup', url: 'models/rock_group.glb' },
+        { key: 'rock', url: 'models/rock.glb' },
+        { key: 'dock', url: 'models/dock.glb' },
+        { key: 'barrel', url: 'models/barrel.glb' },
+        { key: 'crate', url: 'models/crate.glb' }
+      ];
+
+      let loaded = 0;
+      list.forEach(item => {
+        loader.load(
+          item.url,
+          (gltf) => {
+            MODEL_CACHE[item.key] = gltf.scene;
+            gltf.scene.traverse((c) => {
+              if (c.isMesh) {
+                c.castShadow = true;
+                c.receiveShadow = true;
+              }
+            });
+            loaded++;
+            if (loaded === list.length && callback) callback();
+          },
+          undefined,
+          () => {
+            loaded++;
+            if (loaded === list.length && callback) callback();
+          }
+        );
+      });
+    }
+
+    // --- ПРОДВИНУТЫЙ ПОСТРОИТЕЛЬ СПЛАЙНОВОЙ ТРАССЫ И ОСТРОВОВ ---
+    class SplineTrackWorld {
+      constructor(scene) {
+        this.scene = scene;
+        this.curve = null;
+        this.samples = [];
+        this.totalTrackLength = 0;
+        this.checkpoints = [];
+        this.turboGates = [];
+        this.stars = [];
+        this.finish = null;
+        this.startPoint = null;
+        this.trackMeshes = [];
+        this.animProps = [];
+      }
+
+      clear() {
+        this.trackMeshes.forEach(mesh => {
+          this.scene.remove(mesh);
+          if (mesh.geometry) mesh.geometry.dispose();
+        });
+        this.samples = [];
+        this.checkpoints = [];
+        this.turboGates = [];
+        this.stars = [];
+        this.finish = null;
+        this.startPoint = null;
+        this.trackMeshes = [];
+        this.animProps = [];
+      }
+
+      // Пальмы (использует 3D модели palm_majesty и palm_fan с текстурами)
+      createPalmTree(x, y, z, scale = 1.0, tiltZ = 0.08, type = 0) {
+        const cached = (type === 1 && MODEL_CACHE.palmFan) ? MODEL_CACHE.palmFan : (MODEL_CACHE.palmMajesty || MODEL_CACHE.palmFan);
+        if (cached) {
+          const palm = cached.clone(true);
+          palm.position.set(x, y, z);
+          // Исходная модель в GLB ~7.9м в высоту — масштаб 0.45 даёт уютные ~3.5м
+          palm.scale.setScalar(scale * 0.45);
+          palm.rotation.y = Math.random() * Math.PI * 2;
+          palm.rotation.z = (Math.random() - 0.5) * tiltZ;
+          this.scene.add(palm);
+          this.trackMeshes.push(palm);
+          return;
+        }
+
+        // Процедурный запасной вариант
+        const palmGroup = new THREE.Group();
+        palmGroup.position.set(x, y, z);
+        palmGroup.scale.setScalar(scale);
+
+        let curY = 0;
+        let curX = 0;
+        const segCount = 6;
+        for (let i = 0; i < segCount; i++) {
+          const rB = 0.28 * (1 - i * 0.08);
+          const rT = 0.28 * (1 - (i + 1) * 0.08);
+          const h = 0.65;
+          const trunkGeo = new THREE.CylinderGeometry(rT, rB, h, 8);
+          const trunkMesh = new THREE.Mesh(trunkGeo, MATS.palmBark);
+          trunkMesh.position.set(curX, curY + h / 2, 0);
+          trunkMesh.rotation.z = -tiltZ * i;
+          palmGroup.add(trunkMesh);
+          curY += h * 0.93;
+          curX += tiltZ * (i + 1) * 0.6;
+        }
+
+        const leafCount = 8;
+        for (let i = 0; i < leafCount; i++) {
+          const ang = (i / leafCount) * Math.PI * 2;
+          const leafGeo = new THREE.ConeGeometry(0.55, 2.5, 6);
+          leafGeo.scale(1, 1, 0.16);
+          const leafMesh = new THREE.Mesh(leafGeo, MATS.palmLeaf);
+          leafMesh.position.set(curX, curY, 0);
+          leafMesh.rotation.y = ang;
+          leafMesh.rotation.z = Math.PI / 2.5;
+          palmGroup.add(leafMesh);
+        }
+
+        this.scene.add(palmGroup);
+        this.trackMeshes.push(palmGroup);
+      }
+
+      // Скалы и валуны (использует 3D модели rock_group и rock)
+      createBoulder(x, y, z, scale = 1.0, isGroup = false) {
+        const cached = (isGroup && MODEL_CACHE.rockGroup) ? MODEL_CACHE.rockGroup : (MODEL_CACHE.rock || MODEL_CACHE.rockGroup);
+        if (cached) {
+          const rock = cached.clone(true);
+          rock.position.set(x, y, z);
+          rock.scale.setScalar(scale * 1.5);
+          rock.rotation.y = Math.random() * Math.PI * 2;
+          this.scene.add(rock);
+          this.trackMeshes.push(rock);
+          return;
+        }
+
+        const geo = new THREE.DodecahedronGeometry(scale, 1);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x64748B, roughness: 0.85 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y + scale * 0.7, z);
+        mesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+        mesh.receiveShadow = true;
+        this.scene.add(mesh);
+        this.trackMeshes.push(mesh);
+      }
+
+      // Цветочные полянки
+      createFlowerPatch(x, y, z) {
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+        const flowerCols = [0xEF4444, 0xF59E0B, 0x8B5CF6, 0xEC4899, 0xFFFFFF];
+        for (let i = 0; i < 6; i++) {
+          const col = flowerCols[Math.floor(Math.random() * flowerCols.length)];
+          const fGeo = new THREE.SphereGeometry(0.12, 6, 6);
+          const fMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.4 });
+          const m = new THREE.Mesh(fGeo, fMat);
+          m.position.set((Math.random() - 0.5) * 1.2, 0.12, (Math.random() - 0.5) * 1.2);
+          group.add(m);
+        }
+        this.scene.add(group);
+        this.trackMeshes.push(group);
+      }
+
+      // Процедурный живой остров с рельефом
+      createProceduralIsland(x, y, z, baseRadius, theme, isFinish) {
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+
+        const ptsCount = 24;
+
+        // Органический рельеф береговой линии
+        const beachGeo = new THREE.CylinderGeometry(baseRadius * 1.08, baseRadius * 1.22, y + 1.8, ptsCount);
+        const beach = new THREE.Mesh(beachGeo, MATS.islandSand);
+        beach.position.y = -(y + 1.8) / 2;
+        beach.receiveShadow = true;
+        group.add(beach);
+
+        // Зеленый травяной холм сверху
+        const grassGeo = new THREE.CylinderGeometry(baseRadius * 0.94, baseRadius * 1.02, 0.5, ptsCount);
+        const grass = new THREE.Mesh(grassGeo, MATS.islandGrass);
+        grass.position.y = -0.15;
+        grass.receiveShadow = true;
+        group.add(grass);
+
+        // Пальмы на краю острова, чтобы не заслонять шарик и мостик
+        const palmCount = theme && theme.palmCount ? theme.palmCount : 2;
+        for (let p = 0; p < palmCount; p++) {
+          const ang = (p / palmCount) * Math.PI * 2 + 0.6;
+          const dist = baseRadius * (0.75 + Math.random() * 0.12);
+          const px = x + Math.cos(ang) * dist;
+          const pz = z + Math.sin(ang) * dist;
+          const palmType = (p % 2);
+          this.createPalmTree(px, y, pz, 0.95 + Math.random() * 0.25, 0.08, palmType);
+        }
+
+        // Скалы и валуны из моделей
+        for (let b = 0; b < 3; b++) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = baseRadius * 0.82;
+          this.createBoulder(x + Math.cos(ang) * dist, y, z + Math.sin(ang) * dist, 0.5 + Math.random() * 0.4, b === 0);
+        }
+
+        // Цветы
+        this.createFlowerPatch(x + baseRadius * 0.35, y, z - baseRadius * 0.35);
+
+        // Тема острова без маяка, добавляем лунку
+        if (isFinish) {
+          // Добавляем визуальную лунку (цилиндр)
+          const holeGeo = new THREE.CylinderGeometry(baseRadius * 0.4, baseRadius * 0.4, 0.2, 32);
+          const holeMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.7, metalness: 0.2 }); // золотой цвет
+          const hole = new THREE.Mesh(holeGeo, holeMat);
+          hole.position.set(0, 0.1, 0); // центрируется в координатах острова
+          group.add(hole);
+
+          // Объект завершения без маяка
+          this.finish = { x, y, z, radius: baseRadius * 0.98 };
+        } else {
+          // Причал и бочки на стартовом острове
+          if (MODEL_CACHE.dock) {
+            const dock = MODEL_CACHE.dock.clone(true);
+            dock.position.set(0, 0.05, baseRadius * 0.72);
+            dock.scale.setScalar(1.2);
+            group.add(dock);
+          } else {
+            const pierGeo = new THREE.BoxGeometry(1.6, 0.25, 2.8);
+            const pier = new THREE.Mesh(pierGeo, MATS.woodPlank1);
+            pier.position.set(0, 0.05, baseRadius * 0.65);
+            group.add(pier);
+          }
+
+          // Бочки и ящики
+          if (MODEL_CACHE.barrel) {
+            const b = MODEL_CACHE.barrel.clone(true);
+            b.position.set(baseRadius * 0.35, 0.05, baseRadius * 0.5);
+            b.scale.setScalar(1.2);
+            group.add(b);
+          }
+          if (MODEL_CACHE.crate) {
+            const c = MODEL_CACHE.crate.clone(true);
+            c.position.set(baseRadius * 0.45, 0.05, baseRadius * 0.42);
+            c.scale.setScalar(1.2);
+            group.add(c);
+          }
+        }
+
+        this.scene.add(group);
+        this.trackMeshes.push(group);
+      }
+
+      // Турбо-Врата (Speed Boost Gate)
+      addTurboGate(x, y, z, u, tangent) {
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+
+        const angleY = Math.atan2(tangent.x, tangent.z);
+        group.rotation.y = angleY;
+
+        let starMesh;
+
+        if (MODEL_CACHE.checkpoint) {
+          // Используем GLB-модель чекпойнта
+          const cp = MODEL_CACHE.checkpoint.clone(true);
+          cp.position.set(0, 0, 0);
+          // Масштаб подбираем чтобы ворота были ~3 ед. высотой
+          cp.scale.setScalar(1.4);
+          group.add(cp);
+          // Создаём невидимую звезду для анимации прохождения
+          const dummyGeo = new THREE.SphereGeometry(0.01);
+          const dummyMat = new THREE.MeshBasicMaterial({ visible: false });
+          starMesh = new THREE.Mesh(dummyGeo, dummyMat);
+          starMesh.position.set(0, 1.5, 0);
+          group.add(starMesh);
+        } else {
+          // Фолбэк: арка из столбиков
+          const postGeo = new THREE.CylinderGeometry(0.14, 0.16, 3.2, 8);
+          const p1 = new THREE.Mesh(postGeo, MATS.woodBeam);
+          p1.position.set(-1.6, 1.6, 0);
+          const p2 = new THREE.Mesh(postGeo, MATS.woodBeam);
+          p2.position.set(1.6, 1.6, 0);
+          const barGeo = new THREE.CylinderGeometry(0.12, 0.12, 3.4, 8);
+          barGeo.rotateZ(Math.PI / 2);
+          const bar = new THREE.Mesh(barGeo, MATS.woodBeam);
+          bar.position.set(0, 3.1, 0);
+          const starGeo = new THREE.OctahedronGeometry(0.55);
+          starMesh = new THREE.Mesh(starGeo, MATS.turboGate);
+          starMesh.position.set(0, 2.5, 0);
+          group.add(p1); group.add(p2); group.add(bar); group.add(starMesh);
+        }
+
+        this.scene.add(group);
+        this.trackMeshes.push(group);
+
+        this.turboGates.push({
+          x, y, z, u, tangent: tangent.clone(), radius: 2.4, passed: false, starMesh
+        });
+      }
+
+      // Звёздочки
+      addStar(x, y, z) {
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+
+        if (MODEL_CACHE.goldStar) {
+          // Используем GLB-модель золотой звезды
+          const s = MODEL_CACHE.goldStar.clone(true);
+          s.scale.setScalar(0.6);
+          s.position.set(0, 0, 0);
+          group.add(s);
+        } else {
+          // Фолбэк: два конуса
+          const g1 = new THREE.ConeGeometry(0.48, 0.95, 5);
+          const g2 = new THREE.ConeGeometry(0.48, 0.95, 5);
+          const m1 = new THREE.Mesh(g1, MATS.goldStar);
+          const m2 = new THREE.Mesh(g2, MATS.goldStar);
+          m2.rotation.x = Math.PI;
+          group.add(m1); group.add(m2);
+        }
+
+        this.scene.add(group);
+        this.trackMeshes.push(group);
+
+        this.stars.push({
+          mesh: group, x, y, z,
+          collected: false,
+          baseY: y,
+          animOffset: Math.random() * Math.PI * 2
+        });
+      }
+
+      // Построение уровня (БЕЗ ВЕРХНИХ БОРТИКОВ — МОСТИК ОТКРЫТ И ЧИСТ!)
+      buildLevel(config) {
+        this.clear();
+
+        const pts = config.pathPoints.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+        this.curve = new THREE.CatmullRomCurve3(pts);
+        this.curve.curveType = 'catmullrom';
+        this.curve.tension = 0.45;
+        this.totalTrackLength = this.curve.getLength();
+
+        // 2. Дощечки настила
+        const stepDist = 0.52;
+        const numPlanks = Math.floor(this.totalTrackLength / stepDist);
+
+        const plankGeo = new THREE.BoxGeometry(1.0, 0.22, 0.48);
+        const beamGeo = new THREE.CylinderGeometry(0.2, 0.25, 1, 8);
+
+        const getWidthAtU = (u) => {
+          const numSegs = config.pathPoints.length - 1;
+          const idx = Math.min(numSegs - 1, Math.floor(u * numSegs));
+          const f = (u * numSegs) - idx;
+          const w1 = config.pathPoints[idx][3];
+          const w2 = config.pathPoints[idx + 1][3];
+          return w1 + (w2 - w1) * f;
+        };
+
+        const ropeLeftPts = [];
+        const ropeRightPts = [];
+
+        for (let i = 0; i <= numPlanks; i++) {
+          const u = i / numPlanks;
+          const pos = this.curve.getPointAt(u);
+          const tangent = this.curve.getTangentAt(u).normalize();
+          const width = getWidthAtU(u);
+          const halfW = width / 2;
+
+          const normalRight = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+          this.samples.push({
+            u,
+            pos: pos.clone(),
+            tangent: tangent.clone(),
+            normalRight: normalRight.clone(),
+            width,
+            y: pos.y
+          });
+
+          // Точки для нижних несущих канатов подвесного моста (строго под дощечками)
+          const pLeft = pos.clone().addScaledVector(normalRight, -halfW);
+          const pRight = pos.clone().addScaledVector(normalRight, halfW);
+          ropeLeftPts.push(pLeft.clone().add(new THREE.Vector3(0, -0.09, 0)));
+          ropeRightPts.push(pRight.clone().add(new THREE.Vector3(0, -0.09, 0)));
+
+          // Меш дощечки (чередуем текстуры)
+          const mat = (i % 2 === 0) ? MATS.woodPlank1 : MATS.woodPlank2;
+          const plankMesh = new THREE.Mesh(plankGeo, mat);
+
+          // Легкий живой микро-люфт для реализма деревянного настила
+          const microJitterY = ((i % 3) - 1) * 0.008;
+          plankMesh.position.set(pos.x, pos.y - 0.11 + microJitterY, pos.z);
+          plankMesh.scale.set(width, 1.0, 1.0);
+
+          const angleY = Math.atan2(tangent.x, tangent.z);
+          const angleX = -Math.asin(Math.max(-0.95, Math.min(0.95, tangent.y)));
+          plankMesh.rotation.y = angleY;
+          plankMesh.rotation.x = angleX;
+          plankMesh.castShadow = true;
+          plankMesh.receiveShadow = true;
+
+          this.scene.add(plankMesh);
+          this.trackMeshes.push(plankMesh);
+
+          // Опорные сваи мостика в воду (строго под настилом!)
+          if (i % 14 === 0 && pos.y > 1.2) {
+            const legH = pos.y + 1.0;
+            const leg = new THREE.Mesh(beamGeo, MATS.woodBeam);
+            leg.scale.set(0.65, legH, 0.65);
+            leg.position.set(pos.x, (pos.y - 0.14 - 1.0) / 2, pos.z);
+            leg.receiveShadow = true;
+            this.scene.add(leg);
+            this.trackMeshes.push(leg);
+          }
+        }
+
+        // 3. Создаем нижние несущие канаты (поддерживают мостик снизу, нет бортиков наверху!)
+        if (ropeLeftPts.length > 2) {
+          const cLeft = new THREE.CatmullRomCurve3(ropeLeftPts);
+          const cRight = new THREE.CatmullRomCurve3(ropeRightPts);
+
+          const tubeGeo1 = new THREE.TubeGeometry(cLeft, Math.min(240, numPlanks), 0.055, 6, false);
+          const tubeGeo2 = new THREE.TubeGeometry(cRight, Math.min(240, numPlanks), 0.055, 6, false);
+
+          const r1 = new THREE.Mesh(tubeGeo1, MATS.rope);
+          const r2 = new THREE.Mesh(tubeGeo2, MATS.rope);
+
+          this.scene.add(r1); this.scene.add(r2);
+          this.trackMeshes.push(r1, r2);
+        }
+
+        // 4. Стартовый и финишный процедурные острова с 3D-моделями
+        const startPt = pts[0];
+        this.startPoint = startPt.clone();
+        this.createProceduralIsland(startPt.x, startPt.y, startPt.z, 5.2, config.theme, false);
+
+        const endPt = pts[pts.length - 1];
+        this.createProceduralIsland(endPt.x, endPt.y, endPt.z, 6.2, config.theme, true);
+
+        // 5. Турбо-Врата (Speed Boost)
+        if (config.turboGates) {
+          config.turboGates.forEach(u => {
+            const pt = this.curve.getPointAt(u);
+            const tan = this.curve.getTangentAt(u).normalize();
+            this.addTurboGate(pt.x, pt.y, pt.z, u, tan);
+          });
+        }
+
+        // 6. Звёздочки вдоль трассы
+        const starCount = config.starsTotal;
+        for (let i = 1; i <= starCount; i++) {
+          const u = (i / (starCount + 1)) * 0.94;
+          const pt = this.curve.getPointAt(u);
+          this.addStar(pt.x, pt.y + 1.25, pt.z);
+        }
+      }
+
+      update(dt, totalTime) {
+        // Анимация звезд
+        this.stars.forEach(s => {
+          if (!s.collected) {
+            s.mesh.rotation.y += dt * 3.2;
+            s.mesh.position.y = s.baseY + Math.sin(totalTime * 3.8 + s.animOffset) * 0.24;
+          }
+        });
+
+        // Анимация Турбо-Врат
+        this.turboGates.forEach(g => {
+          if (g.starMesh) {
+            g.starMesh.rotation.y += dt * 4.0;
+            g.starMesh.rotation.z += dt * 2.0;
+          }
+        });
+
+        // Анимация маяка и пропсов
+        this.animProps.forEach(p => {
+          if (p.type === 'lighthouseBeam' && p.mesh) {
+            p.mesh.rotation.y += dt * 1.4;
+          }
+          if (p.lantern) {
+            const s = 1.0 + Math.sin(totalTime * 5.0) * 0.15;
+            p.lantern.scale.setScalar(s);
+          }
+        });
+      }
+    }
+
+    // --- ГЛАВНЫЙ ИГРОВОЙ ДВИЖОК ---
+    class BallBalanceGame {
+      constructor() {
+        this.canvas = document.getElementById('webgl-canvas');
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+
+        this.currentLevelIndex = 0;
+        this.starsCollected = 0;
+        this.starsTotal = 7;
+        this.isWin = false;
+        this.isRespawning = false;
+        this.respawnTimer = 0;
+
+        // Физика шарика
+        this.ballRadius = 0.5;
+        this.ballPos = new THREE.Vector3(0, 3.5, 0);
+        this.ballVel = new THREE.Vector3(0, 0, 0);
+        this.onGround = false;
+        this.checkpointPos = new THREE.Vector3(0, 3.5, 0);
+        this.currentTrackProgress = 0;
+
+        // Камера
+        this.camAngle = 0;
+        this.camPitch = 0.62; // ~35° комфортный угол сверху
+        this.camDist = 8.5;
+        this.camTarget = new THREE.Vector3();
+        this.camViewMode = 1;
+
+        // Управление мышью / клавиатурой
+        this.input = { forward: 0, right: 0 };
+        this.isDraggingMove = false;
+        this.dragOrigin = { x: 0, y: 0 };
+        this.dragVector = { x: 0, y: 0 };
+
+        this.isOrbitingCam = false;
+        this.camDragLast = { x: 0, y: 0 };
+
+        this.particles = [];
+
+        this.initThree();
+        this.initControls();
+        this.loadLevel(0);
+
+        this.animate = this.animate.bind(this);
+        requestAnimationFrame(this.animate);
+      }
+
+      initThree() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x7DD3FC);
+        this.scene.fog = new THREE.FogExp2(0x7DD3FC, 0.0035);
+
+        const aspect = window.innerWidth / window.innerHeight;
+        this.camera = new THREE.PerspectiveCamera(65, aspect, 0.1, 600);
+
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          antialias: true,
+          powerPreference: 'high-performance'
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+
+        // Освещение
+        const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x0284C7, 0.95);
+        this.scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xFFFBEB, 1.15);
+        sunLight.position.set(40, 65, 35);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 200;
+        const d = 55;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        this.scene.add(sunLight);
+
+        // Лазурный океан
+        this.createOcean();
+
+        // 3D Облака в небе
+        this.createSkyClouds();
+
+        // Шарик игрока
+        this.createPlayerBall();
+
+        // Сплайновый физический мир трассы
+        this.world = new SplineTrackWorld(this.scene);
+
+        window.addEventListener('resize', () => {
+          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      createOcean() {
+        const oceanGeo = new THREE.PlaneGeometry(600, 600, 64, 64);
+        const oceanMat = new THREE.MeshStandardMaterial({
+          color: 0x0284C7,
+          roughness: 0.12,
+          metalness: 0.15,
+          transparent: true,
+          opacity: 0.88
+        });
+        this.oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
+        this.oceanMesh.rotation.x = -Math.PI / 2;
+        this.oceanMesh.position.y = 0;
+        this.oceanMesh.receiveShadow = true;
+        this.scene.add(this.oceanMesh);
+      }
+
+      createSkyClouds() {
+        const cloudMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.9 });
+        for (let i = 0; i < 22; i++) {
+          const cloudGroup = new THREE.Group();
+          const puffs = 3 + Math.floor(Math.random() * 4);
+          for (let p = 0; p < puffs; p++) {
+            const r = 3.5 + Math.random() * 5.0;
+            const geo = new THREE.DodecahedronGeometry(r, 1);
+            const m = new THREE.Mesh(geo, cloudMat);
+            m.position.set((p - puffs / 2) * 4.2, Math.random() * 2.0, Math.random() * 2.5);
+            cloudGroup.add(m);
+          }
+          cloudGroup.position.set(
+            (Math.random() - 0.5) * 350,
+            28 + Math.random() * 25,
+            (Math.random() - 0.5) * 350
+          );
+          this.scene.add(cloudGroup);
+        }
+      }
+
+      createPlayerBall() {
+        const ballGeo = new THREE.SphereGeometry(this.ballRadius, 32, 24);
+        const skin = SKINS[currentSkinIndex];
+        const texture = skin.generator();
+        const ballMat = new THREE.MeshStandardMaterial({
+          map: texture,
+          roughness: 0.25,
+          metalness: 0.15
+        });
+        this.ballMesh = new THREE.Mesh(ballGeo, ballMat);
+        this.ballMesh.castShadow = true;
+        this.ballMesh.receiveShadow = true;
+        this.scene.add(this.ballMesh);
+
+        const shadowGeo = new THREE.CircleGeometry(this.ballRadius * 1.15, 16);
+        const shadowMat = new THREE.MeshBasicMaterial({
+          color: 0x0F172A,
+          transparent: true,
+          opacity: 0.35
+        });
+        this.shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+        this.shadowMesh.rotation.x = -Math.PI / 2;
+        this.scene.add(this.shadowMesh);
+      }
+
+      applyBallSkin(index) {
+        currentSkinIndex = index;
+        const skin = SKINS[index];
+        this.ballMesh.material.map = skin.generator();
+        this.ballMesh.material.needsUpdate = true;
+      }
+
+      loadLevel(levelIndex) {
+        this.currentLevelIndex = levelIndex;
+        const cfg = LEVELS_CONFIG[levelIndex];
+
+        this.starsCollected = 0;
+        this.starsTotal = cfg.starsTotal;
+        this.isWin = false;
+        this.isRespawning = false;
+
+        this.ballPos.set(cfg.spawn.x, cfg.spawn.y, cfg.spawn.z);
+        this.ballVel.set(0, 0, 0);
+        this.checkpointPos.copy(this.ballPos);
+        this.onGround = true;
+
+        this.world.buildLevel(cfg);
+
+        document.getElementById('ui-level-name').innerText = `${cfg.icon} ${levelIndex + 1}: ${cfg.name}`;
+        this.updateStarsUI();
+        this.updateProgressUI(0);
+
+        // Камера сразу ориентируется в сторону начала трассы
+        if (this.world.samples.length > 0) {
+          const t = this.world.samples[0].tangent;
+          this.camAngle = Math.atan2(t.x, t.z);
+        } else {
+          this.camAngle = 0;
+        }
+        this.camPitch = 0.62;
+
+        this.showToast(`🌴 ${cfg.name}`);
+      }
+
+      updateStarsUI() {
+        document.getElementById('ui-stars-count').innerText = `${this.starsCollected}/${this.starsTotal}`;
+        const bankEl = document.getElementById('ui-stars-bank');
+        if (bankEl) bankEl.innerText = totalStarsBank;
+      }
+
+      updateProgressUI(percent) {
+        const fill = document.getElementById('ui-progress-fill');
+        if (fill) fill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+      }
+
+      showToast(text) {
+        const toast = document.getElementById('toast-banner');
+        toast.innerText = text;
+        toast.classList.add('show');
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => {
+          toast.classList.remove('show');
+        }, 1800);
+      }
+
+      // --- УПРАВЛЕНИЕ МЫШЬЮ И КЛАВИАТУРОЙ (ПРЫЖОК УДАЛЁН!) ---
+      initControls() {
+        const canvas = this.canvas;
+        const marker = document.getElementById('drag-marker');
+        const knob = document.getElementById('drag-knob');
+
+        // Переключение вида камеры (🎥)
+        document.getElementById('btn-cam-view').addEventListener('click', () => {
+          this.camViewMode = (this.camViewMode + 1) % 3;
+          if (this.camViewMode === 0) {
+            this.camDist = 6.2; this.camPitch = 0.52;
+            this.showToast('🎥 Вид: Близкий');
+          } else if (this.camViewMode === 1) {
+            this.camDist = 8.5; this.camPitch = 0.62;
+            this.showToast('🎥 Вид: Стандартный');
+          } else {
+            this.camDist = 13.5; this.camPitch = 0.82;
+            this.showToast('🎥 Вид: Панорама');
+          }
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+          sound.enabled = !sound.enabled;
+          document.getElementById('btn-sound').innerText = sound.enabled ? '🔊' : '🔇';
+          if (!sound.enabled && sound.rollGain) {
+            sound.rollGain.gain.setValueAtTime(0, sound.ctx.currentTime);
+          }
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+          this.loadLevel(this.currentLevelIndex);
+        });
+
+        const modalLevels = document.getElementById('modal-levels');
+        document.getElementById('btn-levels-menu').addEventListener('click', () => {
+          this.renderLevelsGrid();
+          modalLevels.classList.add('active');
+        });
+        document.getElementById('btn-close-levels').addEventListener('click', () => {
+          modalLevels.classList.remove('active');
+        });
+
+        const modalSkins = document.getElementById('modal-skins');
+        document.getElementById('btn-skins').addEventListener('click', () => {
+          this.renderSkinsGrid();
+          modalSkins.classList.add('active');
+        });
+        document.getElementById('btn-close-skins').addEventListener('click', () => {
+          modalSkins.classList.remove('active');
+        });
+
+        document.getElementById('btn-win-replay').addEventListener('click', () => {
+          document.getElementById('modal-win').classList.remove('active');
+          this.loadLevel(this.currentLevelIndex);
+        });
+        document.getElementById('btn-win-next').addEventListener('click', () => {
+          document.getElementById('modal-win').classList.remove('active');
+          const next = (this.currentLevelIndex + 1) % LEVELS_CONFIG.length;
+          this.loadLevel(next);
+        });
+
+        // Клавиатура (W, A, S, D, стрелки, R)
+        window.addEventListener('keydown', (e) => {
+          sound.init();
+          const k = e.code;
+          if (k === 'KeyW' || k === 'ArrowUp') this.input.forward = 1;
+          if (k === 'KeyS' || k === 'ArrowDown') this.input.forward = -1;
+          if (k === 'KeyA' || k === 'ArrowLeft') this.input.right = -1;
+          if (k === 'KeyD' || k === 'ArrowRight') this.input.right = 1;
+          if (k === 'KeyR') this.loadLevel(this.currentLevelIndex);
+        });
+
+        window.addEventListener('keyup', (e) => {
+          const k = e.code;
+          if ((k === 'KeyW' || k === 'ArrowUp') && this.input.forward > 0) this.input.forward = 0;
+          if ((k === 'KeyS' || k === 'ArrowDown') && this.input.forward < 0) this.input.forward = 0;
+          if ((k === 'KeyA' || k === 'ArrowLeft') && this.input.right < 0) this.input.right = 0;
+          if ((k === 'KeyD' || k === 'ArrowRight') && this.input.right > 0) this.input.right = 0;
+        });
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Мышь и тач
+        canvas.addEventListener('pointerdown', (e) => {
+          sound.init();
+          canvas.setPointerCapture(e.pointerId);
+
+          if (e.button === 2 || e.shiftKey) {
+            this.isOrbitingCam = true;
+            this.camDragLast = { x: e.clientX, y: e.clientY };
+            return;
+          }
+
+          this.isDraggingMove = true;
+          this.dragOrigin = { x: e.clientX, y: e.clientY };
+          this.dragVector = { x: 0, y: 0 };
+
+          marker.style.display = 'block';
+          marker.style.left = `${e.clientX}px`;
+          marker.style.top = `${e.clientY}px`;
+          knob.style.transform = 'translate(0px, 0px)';
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+          if (this.isOrbitingCam) {
+            const dx = e.clientX - this.camDragLast.x;
+            const dy = e.clientY - this.camDragLast.y;
+            this.camDragLast = { x: e.clientX, y: e.clientY };
+
+            this.camAngle -= dx * 0.007;
+            this.camPitch = Math.max(0.18, Math.min(1.25, this.camPitch + dy * 0.006));
+            return;
+          }
+
+          if (this.isDraggingMove) {
+            const dx = e.clientX - this.dragOrigin.x;
+            const dy = e.clientY - this.dragOrigin.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const maxRadius = 70;
+            const clampedDist = Math.min(dist, maxRadius);
+            const angle = Math.atan2(dy, dx);
+
+            const knobX = Math.cos(angle) * clampedDist;
+            const knobY = Math.sin(angle) * clampedDist;
+            knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+            // Плавная кривая отклика для ювелирного микро-управления
+            const power = Math.pow(clampedDist / maxRadius, 1.3);
+            this.dragVector.x = Math.cos(angle) * power;
+            this.dragVector.y = -Math.sin(angle) * power;
+          }
+        });
+
+        const stopDrag = () => {
+          this.isDraggingMove = false;
+          this.isOrbitingCam = false;
+          this.dragVector = { x: 0, y: 0 };
+          marker.style.display = 'none';
+        };
+
+        canvas.addEventListener('pointerup', stopDrag);
+        canvas.addEventListener('pointercancel', stopDrag);
+
+        canvas.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          this.camDist = Math.max(4.5, Math.min(18.0, this.camDist + e.deltaY * 0.012));
+        }, { passive: false });
+      }
+
+      renderLevelsGrid() {
+        const grid = document.getElementById('levels-grid');
+        grid.innerHTML = '';
+        LEVELS_CONFIG.forEach((lvl, idx) => {
+          const card = document.createElement('div');
+          card.className = `level-card ${idx === this.currentLevelIndex ? 'active-current' : ''}`;
+          card.innerHTML = `
+            <div class="lvl-num">${lvl.icon} ${idx + 1}</div>
+            <div class="lvl-name">${lvl.name}</div>
+            <div class="lvl-stars">${'⭐'.repeat(Math.min(3, Math.ceil(lvl.starsTotal / 3)))}</div>
+          `;
+          card.addEventListener('click', () => {
+            document.getElementById('modal-levels').classList.remove('active');
+            this.loadLevel(idx);
+          });
+          grid.appendChild(card);
+        });
+      }
+
+      renderSkinsGrid() {
+        const grid = document.getElementById('skins-grid');
+        grid.innerHTML = '';
+        SKINS.forEach((skin, idx) => {
+          const isUnlocked = (totalStarsBank >= skin.price);
+          const isCurrent = (idx === currentSkinIndex);
+          const card = document.createElement('div');
+          card.className = `skin-card ${isCurrent ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}`;
+
+          let priceBadge = '';
+          if (skin.price === 0) {
+            priceBadge = '<div class="skin-price" style="color:#10B981; border-color:#10B981;">Бесплатно</div>';
+          } else if (isUnlocked) {
+            priceBadge = '<div class="skin-price" style="color:#10B981; border-color:#10B981;">Открыто ✅</div>';
+          } else {
+            priceBadge = `<div class="skin-price">🔒 ${skin.price} ⭐</div>`;
+          }
+
+          card.innerHTML = `
+            <div class="skin-preview" style="background: ${skin.color};"></div>
+            <div class="skin-name">${skin.name}</div>
+            ${priceBadge}
+          `;
+          card.addEventListener('click', () => {
+            if (isUnlocked) {
+              this.applyBallSkin(idx);
+              this.renderSkinsGrid();
+              this.showToast(`Выбран скин: ${skin.name}`);
+            } else {
+              this.showToast(`Нужно собрать ещё ${skin.price - totalStarsBank} ⭐!`);
+            }
+          });
+          grid.appendChild(card);
+        });
+      }
+
+      spawnTrailParticle() {
+        const count = Math.min(3, 1 + Math.floor(this.starsCollected / 3));
+        const colors = [0xFFD23F, 0x38BDF8, 0xEC4899, 0x10B981, 0xA855F7, 0xF97316];
+        for (let i = 0; i < count; i++) {
+          const col = colors[Math.floor(Math.random() * colors.length)];
+          const size = 0.08 + Math.random() * 0.12;
+          const geo = new THREE.DodecahedronGeometry(size, 0);
+          const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.85 });
+          const m = new THREE.Mesh(geo, mat);
+          m.position.copy(this.ballPos);
+          m.position.y -= 0.35;
+          m.position.x += (Math.random() - 0.5) * 0.3;
+          m.position.z += (Math.random() - 0.5) * 0.3;
+          this.scene.add(m);
+          this.particles.push({
+            mesh: m,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: 0.8 + Math.random() * 1.5,
+            vz: (Math.random() - 0.5) * 1.5,
+            life: 0.45
+          });
+        }
+      }
+
+      spawnSplash(x, z) {
+        for (let i = 0; i < 30; i++) {
+          const geo = new THREE.SphereGeometry(0.18 + Math.random() * 0.18, 6, 6);
+          const mat = new THREE.MeshBasicMaterial({ color: 0xE0F2FE, transparent: true, opacity: 0.95 });
+          const m = new THREE.Mesh(geo, mat);
+          m.position.set(x, 0.25, z);
+          this.scene.add(m);
+
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 2.5 + Math.random() * 5.0;
+          this.particles.push({
+            mesh: m,
+            vx: Math.cos(ang) * spd,
+            vy: 4.5 + Math.random() * 5.5,
+            vz: Math.sin(ang) * spd,
+            life: 1.1
+          });
+        }
+      }
+
+      spawnConfetti(x, y, z) {
+        const colors = [0xEF4444, 0xF59E0B, 0x10B981, 0x3B82F6, 0x8B5CF6];
+        for (let i = 0; i < 60; i++) {
+          const col = colors[Math.floor(Math.random() * colors.length)];
+          const geo = new THREE.PlaneGeometry(0.3, 0.3);
+          const mat = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
+          const m = new THREE.Mesh(geo, mat);
+          m.position.set(x, y + 2, z);
+          this.scene.add(m);
+
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 3 + Math.random() * 7;
+          this.particles.push({
+            mesh: m,
+            vx: Math.cos(ang) * spd,
+            vy: 7 + Math.random() * 7,
+            vz: Math.sin(ang) * spd,
+            rotSpeed: (Math.random() - 0.5) * 10,
+            life: 2.0
+          });
+        }
+      }
+
+      // --- ТОЧНЫЙ ФИЗИЧЕСКИЙ РАСЧЁТ СПЛАЙНА И УКЛОНОВ ---
+      updatePhysics(dt) {
+        if (this.isRespawning) {
+          this.respawnTimer -= dt;
+          if (this.respawnTimer <= 0) {
+            this.isRespawning = false;
+            this.ballPos.copy(this.checkpointPos);
+            this.ballPos.y += 0.5;
+            this.ballVel.set(0, 0, 0);
+            this.onGround = true;
+          }
+          return;
+        }
+
+        // Вектор управления от мыши / клавиатуры
+        let moveF = this.input.forward;
+        let moveR = this.input.right;
+        if (this.isDraggingMove) {
+          moveF += this.dragVector.y;
+          moveR += this.dragVector.x;
+        }
+
+        const inputLen = Math.sqrt(moveF * moveF + moveR * moveR);
+        let moveX = 0, moveZ = 0;
+        if (inputLen > 0.05) {
+          const normF = moveF / Math.max(1, inputLen);
+          const normR = moveR / Math.max(1, inputLen);
+
+          // Честные векторные направления относительно камеры
+          const camForward = new THREE.Vector3();
+          this.camera.getWorldDirection(camForward);
+          camForward.y = 0;
+          camForward.normalize();
+
+          // Направление вправо на экране
+          const camRight = new THREE.Vector3();
+          camRight.crossVectors(camForward, new THREE.Vector3(0, 1, 0)).normalize();
+
+          // Движение строго в направлении ввода:
+          // normF — вперёд/назад по экрану
+          // normR — вправо/влево по экрану
+          const moveDir = new THREE.Vector3()
+            .addScaledVector(camForward, normF)
+            .addScaledVector(camRight, normR);
+
+          moveX = moveDir.x;
+          moveZ = moveDir.z;
+        }
+
+        // Плавное ускорение качения с ощущением массы и инерции
+        const accel = 12.5;
+        this.ballVel.x += moveX * accel * dt;
+        this.ballVel.z += moveZ * accel * dt;
+
+        // Гравитация вниз
+        this.ballVel.y -= 26.0 * dt;
+
+        // Мягкое сопротивление качения
+        const groundDrag = this.onGround ? 2.4 : 0.6;
+        this.ballVel.x -= this.ballVel.x * groundDrag * dt;
+        this.ballVel.z -= this.ballVel.z * groundDrag * dt;
+
+        // Ограничение максимальной скорости для контроля над узкими участками
+        const maxHSpd = 9.5;
+        const curHSpd = Math.sqrt(this.ballVel.x * this.ballVel.x + this.ballVel.z * this.ballVel.z);
+        if (curHSpd > maxHSpd) {
+          this.ballVel.x = (this.ballVel.x / curHSpd) * maxHSpd;
+          this.ballVel.z = (this.ballVel.z / curHSpd) * maxHSpd;
+        }
+
+        // --- ТОЧНАЯ ПРОВЕРКА КОЛЛИЗИЙ С УЗКИМИ МОСТИКАМИ И ХОЛМАМИ ---
+        let foundGround = false;
+        let groundY = -999;
+        let slopeSlopeX = 0;
+        let slopeSlopeZ = 0;
+
+        // Поиск ближайшего сэмпла на сплайне трассы
+        let closestDistSq = Infinity;
+        let closestSample = null;
+
+        for (let i = 0; i < this.world.samples.length; i++) {
+          const s = this.world.samples[i];
+          const dx = this.ballPos.x - s.pos.x;
+          const dz = this.ballPos.z - s.pos.z;
+          const dSq = dx * dx + dz * dz;
+          if (dSq < closestDistSq) {
+            closestDistSq = dSq;
+            closestSample = s;
+          }
+        }
+
+        // --- ПРОВЕРКА КОЛЛИЗИЙ (ОСТРОВА И МОСТИКИ) ---
+        let onIsland = false;
+
+        // 1. Проверка финишного острова (приоритетная!)
+        if (this.world.finish) {
+          const f = this.world.finish;
+          const dx = this.ballPos.x - f.x;
+          const dz = this.ballPos.z - f.z;
+          const distSq = dx * dx + dz * dz;
+          if (distSq <= f.radius * f.radius) {
+            if (this.ballPos.y >= f.y - 0.8 && this.ballPos.y <= f.y + 3.0) {
+              groundY = f.y;
+              foundGround = true;
+              onIsland = true;
+              this.updateProgressUI(100);
+
+              // Мягкий невидимый барьер: удерживает шарик на финишном островке
+              const dist = Math.sqrt(distSq);
+              const maxR = f.radius - this.ballRadius * 0.7;
+              if (dist > maxR) {
+                const ang = Math.atan2(dz, dx);
+                this.ballPos.x = f.x + Math.cos(ang) * maxR;
+                this.ballPos.z = f.z + Math.sin(ang) * maxR;
+                this.ballVel.x *= 0.3;
+                this.ballVel.z *= 0.3;
+              }
+
+              if (!this.isWin) {
+                this.triggerWin();
+              }
+            }
+          }
+        }
+
+        // 2. Проверка стартового острова
+        const startPt = this.world.startPoint;
+        if (!onIsland && startPt) {
+          const dx = this.ballPos.x - startPt.x;
+          const dz = this.ballPos.z - startPt.z;
+          const distSq = dx * dx + dz * dz;
+          const startIslandRadius = 4.8;
+          if (distSq <= startIslandRadius * startIslandRadius) {
+            if (this.ballPos.y >= startPt.y - 0.8 && this.ballPos.y <= startPt.y + 3.0) {
+              groundY = startPt.y;
+              foundGround = true;
+              onIsland = true;
+            }
+          }
+        }
+
+        // 3. Проверка мостика (только если не на острове)
+        if (!onIsland && closestSample) {
+          const toBallX = this.ballPos.x - closestSample.pos.x;
+          const toBallZ = this.ballPos.z - closestSample.pos.z;
+          const sideOffset = toBallX * closestSample.normalRight.x + toBallZ * closestSample.normalRight.z;
+          const forwardOffset = toBallX * closestSample.tangent.x + toBallZ * closestSample.tangent.z;
+
+          // Шарик строго на мостике (не за его пределами вперед/назад)
+          const isPastEnd = (closestSample.u >= 0.98 && forwardOffset > 0.8);
+          const isBeforeStart = (closestSample.u <= 0.02 && forwardOffset < -0.8);
+
+          if (!isPastEnd && !isBeforeStart) {
+            this.closestTrackSample = closestSample;
+            const halfW = closestSample.width / 2;
+
+            // МЯГКИЕ НЕВИДИМЫЕ БОРТИКИ (МАГНИТНАЯ ЗАЩИТА ОТ ПАДЕНИЯ)
+            const safeZone = halfW * 0.35;
+            if (Math.abs(sideOffset) > safeZone) {
+              const excess = Math.abs(sideOffset) - safeZone;
+              const pushDir = -Math.sign(sideOffset);
+              const restoreForce = excess * 18.0;
+              this.ballVel.x += closestSample.normalRight.x * pushDir * restoreForce * dt;
+              this.ballVel.z += closestSample.normalRight.z * pushDir * restoreForce * dt;
+            }
+
+            // Упругий невидимый бортик: не даёт соскользнуть с мостика в воду
+            const maxAllowedOffset = halfW - this.ballRadius * 0.3;
+            if (Math.abs(sideOffset) > maxAllowedOffset) {
+              const clampedOffset = Math.sign(sideOffset) * maxAllowedOffset;
+              const offsetDiff = clampedOffset - sideOffset;
+              this.ballPos.x += closestSample.normalRight.x * offsetDiff;
+              this.ballPos.z += closestSample.normalRight.z * offsetDiff;
+
+              const sideSpeed = this.ballVel.x * closestSample.normalRight.x + this.ballVel.z * closestSample.normalRight.z;
+              if (sideSpeed * Math.sign(sideOffset) > 0) {
+                this.ballVel.x -= closestSample.normalRight.x * sideSpeed * 1.5;
+                this.ballVel.z -= closestSample.normalRight.z * sideSpeed * 1.5;
+              }
+            }
+
+            // Удержание на поверхности дощечек
+            const surfY = closestSample.pos.y;
+            if (this.ballPos.y >= surfY - 0.7 && this.ballPos.y <= surfY + 2.0) {
+              groundY = surfY;
+              foundGround = true;
+
+              // Физика уклона горки (плавное скатывание)
+              const slopeY = closestSample.tangent.y;
+              if (Math.abs(slopeY) > 0.05) {
+                const rollForce = -slopeY * 9.5;
+                this.ballVel.x += closestSample.tangent.x * rollForce * dt;
+                this.ballVel.z += closestSample.tangent.z * rollForce * dt;
+              }
+
+              this.currentTrackProgress = closestSample.u * 100;
+              this.updateProgressUI(this.currentTrackProgress);
+            }
+          }
+        }
+
+        // Приземление и удержание на поверхности
+        if (foundGround && this.ballPos.y <= groundY + this.ballRadius) {
+          this.ballPos.y = groundY + this.ballRadius;
+          if (this.ballVel.y < 0) this.ballVel.y = 0;
+          this.onGround = true;
+        } else {
+          this.onGround = false;
+        }
+
+        // Применяем скорость
+        this.ballPos.x += this.ballVel.x * dt;
+        this.ballPos.y += this.ballVel.y * dt;
+        this.ballPos.z += this.ballVel.z * dt;
+
+        const hSpd = Math.sqrt(this.ballVel.x * this.ballVel.x + this.ballVel.z * this.ballVel.z);
+        sound.setRollingSpeed(hSpd, this.onGround);
+
+        // Звёздочки (пополняют копилку и усиливают радужный след кометы!)
+        for (let s of this.world.stars) {
+          if (!s.collected) {
+            const dist = this.ballPos.distanceTo(s.mesh.position);
+            if (dist < this.ballRadius + 0.8) {
+              s.collected = true;
+              this.scene.remove(s.mesh);
+              this.starsCollected++;
+              totalStarsBank++;
+              localStorage.setItem('ball_balance_stars_bank', totalStarsBank);
+              this.updateStarsUI();
+              sound.playStar();
+              this.spawnConfetti(s.mesh.position.x, s.mesh.position.y, s.mesh.position.z);
+              this.showToast(`⭐ Звезда в копилке! (+1 🪙)`);
+            }
+          }
+        }
+
+        // Турбо-Врата (Speed Boost)
+        for (let tg of this.world.turboGates) {
+          if (!tg.passed) {
+            const dist = Math.sqrt((this.ballPos.x - tg.x) ** 2 + (this.ballPos.z - tg.z) ** 2);
+            if (dist < tg.radius && Math.abs(this.ballPos.y - tg.y) < 2.5) {
+              tg.passed = true;
+              // Мощный мягкий импульс ускорения вперед!
+              this.ballVel.addScaledVector(tg.tangent, 8.5);
+              sound.playTurbo();
+              this.spawnConfetti(tg.x, tg.y + 1.8, tg.z);
+              this.showToast('⚡ ВЖУХ! ТУРБО-УСКОРЕНИЕ!');
+            }
+          }
+        }
+
+        // Чекпоинты (если есть)
+        for (let cp of this.world.checkpoints) {
+          if (!cp.passed) {
+            const dist = Math.sqrt((this.ballPos.x - cp.x) ** 2 + (this.ballPos.z - cp.z) ** 2);
+            if (dist < cp.radius && Math.abs(this.ballPos.y - cp.y) < 2.5) {
+              cp.passed = true;
+              cp.gem.material = MATS.checkpointGemGreen;
+              this.checkpointPos.set(cp.x, cp.y + 0.5, cp.z);
+              sound.playCheckpoint();
+              this.showToast('⛳ Чекпоинт сохранён!');
+            }
+          }
+        }
+
+        // ПАДЕНИЕ В ВОДУ!
+        if (this.ballPos.y < 0.2) {
+          sound.playSplash();
+          this.spawnSplash(this.ballPos.x, this.ballPos.z);
+          this.isRespawning = true;
+          this.respawnTimer = 0.85;
+          this.showToast('🌊 Бултых! Шарик упал в воду...');
+        }
+
+        // Физическое вращение сферы шарика
+        const rollDist = Math.sqrt((this.ballVel.x * dt) ** 2 + (this.ballVel.z * dt) ** 2);
+        if (rollDist > 0.0001) {
+          const rollAxis = new THREE.Vector3(-this.ballVel.z, 0, this.ballVel.x).normalize();
+          const rollAngle = rollDist / this.ballRadius;
+          this.ballMesh.rotateOnWorldAxis(rollAxis, rollAngle);
+        }
+
+        this.ballMesh.position.copy(this.ballPos);
+
+        // Тень под шариком
+        this.shadowMesh.position.set(this.ballPos.x, (foundGround ? groundY : 0.02) + 0.02, this.ballPos.z);
+        const heightAbove = this.ballPos.y - (foundGround ? groundY : 0);
+        const shadowScale = Math.max(0.2, 1.0 - heightAbove * 0.15);
+        this.shadowMesh.scale.setScalar(shadowScale);
+        this.shadowMesh.material.opacity = Math.max(0.08, 0.45 - heightAbove * 0.06);
+      }
+
+      triggerWin() {
+        this.isWin = true;
+        sound.playWin();
+        this.spawnConfetti(this.world.finish.x, this.world.finish.y, this.world.finish.z);
+
+        const starsCount = Math.max(1, Math.min(3, Math.ceil((this.starsCollected / Math.max(1, this.starsTotal)) * 3)));
+        document.getElementById('win-stars-display').innerText = '⭐'.repeat(starsCount);
+        document.getElementById('win-subtitle').innerText = `Собрано звёзд: ${this.starsCollected} из ${this.starsTotal}!`;
+
+        setTimeout(() => {
+          document.getElementById('modal-win').classList.add('active');
+        }, 600);
+      }
+
+      updateParticles(dt) {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const p = this.particles[i];
+          p.life -= dt;
+          p.mesh.position.x += p.vx * dt;
+          p.mesh.position.y += p.vy * dt;
+          p.mesh.position.z += p.vz * dt;
+          p.vy -= 14 * dt;
+          if (p.rotSpeed) {
+            p.mesh.rotation.x += p.rotSpeed * dt;
+            p.mesh.rotation.y += p.rotSpeed * dt;
+          }
+          if (p.life <= 0) {
+            this.scene.remove(p.mesh);
+            p.mesh.geometry.dispose();
+            this.particles.splice(i, 1);
+          }
+        }
+      }
+
+      updateCamera(dt) {
+        this.camTarget.lerp(this.ballPos, 0.16);
+
+        // Умная авто-камера для малыша: сама плавно разворачивается позади шарика
+        if (!this.isOrbitingCam) {
+          let targetAngle = this.camAngle;
+          const hSpd = Math.sqrt(this.ballVel.x * this.ballVel.x + this.ballVel.z * this.ballVel.z);
+
+          if (hSpd > 0.8) {
+            // Камера плавно встает за спиной шарика по направлению его скорости
+            targetAngle = Math.atan2(this.ballVel.x, this.ballVel.z);
+          } else if (this.closestTrackSample) {
+            // Если шарик стоит или медленный, ориентируемся вдоль направления мостика
+            targetAngle = Math.atan2(this.closestTrackSample.tangent.x, this.closestTrackSample.tangent.z);
+          }
+
+          let diff = targetAngle - this.camAngle;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          this.camAngle += diff * Math.min(1.0, dt * 2.4);
+        }
+
+        const distH = this.camDist * Math.cos(this.camPitch);
+        const distV = this.camDist * Math.sin(this.camPitch);
+
+        const cx = this.camTarget.x - Math.sin(this.camAngle) * distH;
+        const cz = this.camTarget.z - Math.cos(this.camAngle) * distH;
+        const cy = this.camTarget.y + distV;
+
+        this.camera.position.set(cx, Math.max(1.2, cy), cz);
+        this.camera.lookAt(this.camTarget.x, this.camTarget.y + 0.35, this.camTarget.z);
+      }
+
+      animate(time) {
+        requestAnimationFrame(this.animate);
+        const dt = Math.min(0.05, 1 / 60);
+        const totalTime = time * 0.001;
+
+        if (this.oceanMesh) {
+          const pos = this.oceanMesh.geometry.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            const u = pos.getX(i);
+            const v = pos.getY(i);
+            const z = Math.sin(u * 0.1 + totalTime * 1.6) * 0.2 + Math.cos(v * 0.12 + totalTime * 1.4) * 0.2;
+            pos.setZ(i, z);
+          }
+          pos.needsUpdate = true;
+        }
+
+        this.world.update(dt, totalTime);
+        this.updatePhysics(dt);
+
+        // Радужный шлейф кометы за шариком во время движения
+        if (this.onGround) {
+          const curSpd = Math.sqrt(this.ballVel.x * this.ballVel.x + this.ballVel.z * this.ballVel.z);
+          if (curSpd > 0.8) {
+            this.spawnTrailParticle();
+          }
+        }
+
+        this.updateParticles(dt);
+        this.updateCamera(dt);
+
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      load3DModels(() => {
+        if (!window.gameInstance) {
+          window.gameInstance = new BallBalanceGame();
+        } else {
+          window.gameInstance.loadLevel(window.gameInstance.currentLevelIndex);
+        }
+      });
+    });
+
+  })();
+  </script>
+</body>
+</html>

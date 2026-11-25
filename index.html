@@ -71,20 +71,25 @@
   .cloud1::before{ width:3.6vmin; height:3.6vmin; top:-1.8vmin; left:0.8vmin; }
   .cloud1::after{ width:2.8vmin; height:2.8vmin; top:-1.3vmin; left:3.8vmin; }
 
-  /* Сетка 5 колонок х 2 ряда для Galaxy S10 (360px высоты) */
+  /* Сетка 6 колонок для 11-12 игр на Galaxy S10 (360px высоты) */
   .grid{
     position:relative;
     z-index:1;
     display:grid;
-    grid-template-columns:repeat(5, minmax(90px, 150px));
-    gap:clamp(5px, 1.2vmin, 12px);
+    grid-template-columns:repeat(6, minmax(80px, 140px));
+    gap:clamp(4px, 1vmin, 10px);
     justify-content:center;
-    max-width:880px;
+    max-width:940px;
     width:100%;
   }
-  @media (max-width: 620px){
+  @media (max-width: 680px){
     .grid{
-      grid-template-columns:repeat(3, minmax(90px, 140px));
+      grid-template-columns:repeat(4, minmax(80px, 130px));
+    }
+  }
+  @media (max-width: 480px){
+    .grid{
+      grid-template-columns:repeat(3, minmax(80px, 120px));
     }
   }
   .card{
@@ -396,6 +401,38 @@
         </svg>
         <div class="card-title">Автофутбол</div>
         <div class="card-sub">играем вдвоём</div>
+      </a>
+
+      <!-- 11. Кати Шар 3D -->
+      <a class="card" href="ball_balance_game.html">
+        <svg class="icon" viewBox="0 0 120 120">
+          <!-- Вода снизу -->
+          <path d="M 10 90 Q 35 84 60 90 T 110 90 L 110 110 L 10 110 Z" fill="#38BDF8" opacity="0.8"/>
+          <path d="M 10 95 Q 35 90 60 95 T 110 95 L 110 110 L 10 110 Z" fill="#0284C7"/>
+          <!-- Подвесной мостик -->
+          <path d="M 12 75 Q 60 92 108 75" fill="none" stroke="#8B5324" stroke-width="7" stroke-linecap="round"/>
+          <path d="M 14 73 Q 60 90 106 73" fill="none" stroke="#D97706" stroke-width="4" stroke-linecap="round"/>
+          <!-- Опоры / сваи в воду -->
+          <line x1="28" y1="80" x2="28" y2="102" stroke="#5C3B1E" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="92" y1="80" x2="92" y2="102" stroke="#5C3B1E" stroke-width="3.5" stroke-linecap="round"/>
+          <!-- 3D Шарик на мостике -->
+          <g transform="translate(60, 62)">
+            <!-- Тень под шариком -->
+            <ellipse cx="0" cy="18" rx="14" ry="4" fill="rgba(43,33,64,0.3)"/>
+            <!-- Тело шарика -->
+            <circle cx="0" cy="0" r="20" fill="#FF4757" stroke="#2B2140" stroke-width="3.5"/>
+            <!-- Полоски шарика -->
+            <path d="M -12 -16 C -4 -5 -4 5 -12 16 C -18 10 -20 0 -12 -16 Z" fill="#FFD23F"/>
+            <path d="M 12 -16 C 4 -5 4 5 12 16 C 18 10 20 0 12 -16 Z" fill="#1E90FF"/>
+            <ellipse cx="0" cy="0" rx="6" ry="19.5" fill="#FFFFFF"/>
+            <!-- Блик света -->
+            <ellipse cx="-6" cy="-8" rx="4" ry="2.5" fill="#FFFFFF" opacity="0.85" transform="rotate(-30 -6 -8)"/>
+          </g>
+          <!-- Звёздочка над мостиком -->
+          <polygon points="90,26 93,34 102,34 95,40 98,48 90,43 83,48 86,40 79,34 88,34" fill="#FFD23F" stroke="#2B2140" stroke-width="2"/>
+        </svg>
+        <div class="card-title">Кати Шар 3D</div>
+        <div class="card-sub">мостики над водой</div>
       </a>
 
     </div>

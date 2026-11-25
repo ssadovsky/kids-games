@@ -1,18 +1,26 @@
-# Секреты подписи Android — никогда не коммитить
+# Секреты подписи Android
 SECRETS_DO_NOT_COMMIT/
 *.keystore
 *.jks
 key.properties
 
-# Локальные результаты сборки Bubblewrap/Gradle, если кто-то соберёт руками
+# Локальные сборки Bubblewrap/Gradle
 /android/
 app-release-signed.apk
 app-release-bundle.aab
 *.apk
 *.aab
 
-# Исходные тяжелые 3D модели
-racing/Blue_Apex_Racer_texture.glb
+# Сырые GLB-файлы (данные уже зашиты в models/models_data.js)
+models/*.glb
 
-# Исходные тяжелые изображения
+# Рабочая папка с исходниками ресурсов (не нужна для запуска)
+tempwork/
+
+# Исходные текстуры (зашиты в ball_balance_game.html / models_data.js)
+textures/
+
+# Прочие тяжёлые ресурсы
+racing/Blue_Apex_Racer_texture.glb
 NewIcon.jpg
+info.txt
