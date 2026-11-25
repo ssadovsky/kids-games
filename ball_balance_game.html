@@ -1588,7 +1588,7 @@
           }
 
           // Объект завершения: island radius и радиус самой лунки
-          this.finish = { x, y, z, radius: baseRadius * 0.98, holeRadius: 1.4 };
+          this.finish = { x, y, z, radius: baseRadius * 0.98, holeRadius: 1.65 };
         } else {
           // Причал и бочки на стартовом острове
           if (MODEL_CACHE.dock) {
@@ -2497,7 +2497,17 @@
                 this.ballVel.z *= 0.3;
               }
 
-              if (!this.isWin && dist <= (f.holeRadius || 1.4)) {
+              // Мягкая воронка вокруг лунки: помогает шарику скатиться в центр и не пролетать мимо
+              const funnelRadius = 3.2;
+              if (dist > 0.01 && dist <= funnelRadius) {
+                const pull = 14.0 * dt;
+                this.ballVel.x += (-dx / dist) * pull;
+                this.ballVel.z += (-dz / dist) * pull;
+                this.ballVel.x *= 0.94;
+                this.ballVel.z *= 0.94;
+              }
+
+              if (!this.isWin && dist <= (f.holeRadius || 1.65)) {
                 this.isSinkingInHole = true;
                 this.holeSinkTimer = 0;
                 this.ballVel.y = Math.min(this.ballVel.y, -1.5);
