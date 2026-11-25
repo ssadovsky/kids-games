@@ -1542,17 +1542,45 @@
         // Цветы
         this.createFlowerPatch(x + baseRadius * 0.35, y, z - baseRadius * 0.35);
 
-        // Тема острова без маяка, добавляем лунку
+        // Тема острова: финишная лунка (GLB или процедурный фолбэк)
         if (isFinish) {
-          // Добавляем визуальную лунку (цилиндр)
-          const holeGeo = new THREE.CylinderGeometry(baseRadius * 0.4, baseRadius * 0.4, 0.2, 32);
-          const holeMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.7, metalness: 0.2 }); // золотой цвет
-          const hole = new THREE.Mesh(holeGeo, holeMat);
-          hole.position.set(0, 0.1, 0); // центрируется в координатах острова
-          group.add(hole);
+          if (MODEL_CACHE.goalRing) {
+            const gr = MODEL_CACHE.goalRing.clone(true);
+            gr.scale.setScalar(2.4);
+            gr.position.set(0, 0.96, 0);
+            group.add(gr);
+          } else {
+            // Фолбэк: тёмное отверстие лунки (плоский диск)
+            const holeGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.05, 32);
+            const holeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 1.0, metalness: 0.0 });
+            const holeDisc = new THREE.Mesh(holeGeo, holeMat);
+            holeDisc.position.set(0, 0.13, 0);
+            group.add(holeDisc);
 
-          // Объект завершения без маяка
-          this.finish = { x, y, z, radius: baseRadius * 0.98 };
+            // Жёлтое кольцо вокруг лунки
+            const ringGeo = new THREE.TorusGeometry(0.58, 0.07, 8, 32);
+            const ringMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.3, metalness: 0.6 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.set(0, 0.16, 0);
+            group.add(ring);
+
+            // Флажок на штоке
+            const poleGeo = new THREE.CylinderGeometry(0.03, 0.03, 2.2, 6);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.5 });
+            const pole = new THREE.Mesh(poleGeo, poleMat);
+            pole.position.set(0, 1.25, 0);
+            group.add(pole);
+
+            const flagGeo = new THREE.BoxGeometry(0.6, 0.35, 0.02);
+            const flagMat = new THREE.MeshStandardMaterial({ color: 0xFF2222, roughness: 0.8, side: THREE.DoubleSide });
+            const flag = new THREE.Mesh(flagGeo, flagMat);
+            flag.position.set(0.32, 2.2, 0);
+            group.add(flag);
+          }
+
+          // Объект завершения: island radius и радиус самой лунки
+          this.finish = { x, y, z, radius: baseRadius * 0.98, holeRadius: 1.4 };
         } else {
           // Причал и бочки на стартовом острове
           if (MODEL_CACHE.dock) {
@@ -1597,11 +1625,10 @@
         let starMesh;
 
         if (MODEL_CACHE.checkpoint) {
-          // Используем GLB-модель чекпойнта
+          // Используем GLB-модель чекпойнта (уже стоит вертикально по Y)
           const cp = MODEL_CACHE.checkpoint.clone(true);
-          cp.position.set(0, 0, 0);
-          // Масштаб подбираем чтобы ворота были ~3 ед. высотой
-          cp.scale.setScalar(1.4);
+          cp.scale.setScalar(1.9);       // ~3.6м ширина, ~3.3м высота
+          cp.position.set(0, 1.65, 0);   // ставим основанием на уровень мостика (y=0)
           group.add(cp);
           // Создаём невидимую звезду для анимации прохождения
           const dummyGeo = new THREE.SphereGeometry(0.01);
@@ -1642,7 +1669,7 @@
         if (MODEL_CACHE.goldStar) {
           // Используем GLB-модель золотой звезды
           const s = MODEL_CACHE.goldStar.clone(true);
-          s.scale.setScalar(0.6);
+          s.scale.setScalar(0.55); // ~1.0м высота
           s.position.set(0, 0, 0);
           group.add(s);
         } else {
@@ -2437,7 +2464,8 @@
                 this.ballVel.z *= 0.3;
               }
 
-              if (!this.isWin) {
+              if (!this.isWin && dist <= (f.holeRadius || 1.4)) {
+                if (typeof sound !== 'undefined' && sound.playHole) sound.playHole();
                 this.triggerWin();
               }
             }

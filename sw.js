@@ -1,6 +1,6 @@
 // Простой service worker: кэширует игры при первом визите,
 // чтобы приложение открывалось даже без интернета после установки.
-const CACHE_NAME = "kids-games-cache-v15";
+const CACHE_NAME = "kids-games-cache-v17";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
