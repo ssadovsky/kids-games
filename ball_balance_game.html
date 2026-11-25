@@ -1544,6 +1544,14 @@
 
         // Тема острова: финишная лунка (GLB или процедурный фолбэк)
         if (isFinish) {
+          // Тёмная глубина внутри лунки поверх травы острова, чтобы не просвечивала земля
+          const holeVoidGeo = new THREE.CircleGeometry(1.16, 32);
+          const holeVoidMat = new THREE.MeshBasicMaterial({ color: 0x070A10 });
+          const holeVoid = new THREE.Mesh(holeVoidGeo, holeVoidMat);
+          holeVoid.rotation.x = -Math.PI / 2;
+          holeVoid.position.set(0, 0.14, 0);
+          group.add(holeVoid);
+
           if (MODEL_CACHE.goalRing) {
             const gr = MODEL_CACHE.goalRing.clone(true);
             gr.scale.setScalar(2.4);
@@ -1722,6 +1730,7 @@
         const ropeLeftPts = [];
         const ropeRightPts = [];
 
+        const endPtForTrim = pts[pts.length - 1];
         for (let i = 0; i <= numPlanks; i++) {
           const u = i / numPlanks;
           const pos = this.curve.getPointAt(u);
@@ -1739,6 +1748,10 @@
             width,
             y: pos.y
           });
+
+          // Не рисуем доски и канаты внутри самой финишной лунки
+          const distToEnd = Math.hypot(pos.x - endPtForTrim.x, pos.z - endPtForTrim.z);
+          if (distToEnd < 1.65) continue;
 
           // Точки для нижних несущих канатов подвесного моста (строго под дощечками)
           const pLeft = pos.clone().addScaledVector(normalRight, -halfW);
@@ -2029,6 +2042,8 @@
         this.starsCollected = 0;
         this.starsTotal = cfg.starsTotal;
         this.isWin = false;
+        this.isSinkingInHole = false;
+        this.holeSinkTimer = 0;
         this.isRespawning = false;
 
         this.ballPos.set(cfg.spawn.x, cfg.spawn.y, cfg.spawn.z);
@@ -2370,7 +2385,7 @@
 
         const inputLen = Math.sqrt(moveF * moveF + moveR * moveR);
         let moveX = 0, moveZ = 0;
-        if (inputLen > 0.05) {
+        if (!this.isSinkingInHole && !this.isWin && inputLen > 0.05) {
           const normF = moveF / Math.max(1, inputLen);
           const normR = moveR / Math.max(1, inputLen);
 
@@ -2446,7 +2461,25 @@
           const dx = this.ballPos.x - f.x;
           const dz = this.ballPos.z - f.z;
           const distSq = dx * dx + dz * dz;
-          if (distSq <= f.radius * f.radius) {
+
+          if (this.isSinkingInHole) {
+            // Эффект проваливания шарика внутрь лунки
+            groundY = f.y - 1.5;
+            foundGround = true;
+            onIsland = true;
+            this.updateProgressUI(100);
+
+            this.ballPos.x += (f.x - this.ballPos.x) * Math.min(1, dt * 8.0);
+            this.ballPos.z += (f.z - this.ballPos.z) * Math.min(1, dt * 8.0);
+            this.ballVel.x *= 0.85;
+            this.ballVel.z *= 0.85;
+            this.holeSinkTimer += dt;
+
+            if (!this.isWin && (this.ballPos.y <= f.y - 0.45 || this.holeSinkTimer >= 0.55)) {
+              this.isSinkingInHole = false;
+              this.triggerWin();
+            }
+          } else if (distSq <= f.radius * f.radius) {
             if (this.ballPos.y >= f.y - 0.8 && this.ballPos.y <= f.y + 3.0) {
               groundY = f.y;
               foundGround = true;
@@ -2465,8 +2498,10 @@
               }
 
               if (!this.isWin && dist <= (f.holeRadius || 1.4)) {
+                this.isSinkingInHole = true;
+                this.holeSinkTimer = 0;
+                this.ballVel.y = Math.min(this.ballVel.y, -1.5);
                 if (typeof sound !== 'undefined' && sound.playHole) sound.playHole();
-                this.triggerWin();
               }
             }
           }
@@ -2613,7 +2648,7 @@
         }
 
         // ПАДЕНИЕ В ВОДУ!
-        if (this.ballPos.y < 0.2) {
+        if (!this.isSinkingInHole && !this.isWin && this.ballPos.y < 0.2) {
           sound.playSplash();
           this.spawnSplash(this.ballPos.x, this.ballPos.z);
           this.isRespawning = true;
